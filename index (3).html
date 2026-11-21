@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eFootball Solo Cup</title>
+<style>
+:root{--bg:#0c2318;--card:#12331f;--line:#24503a;--tx:#f1f5ee;--mu:#9bb8a6;--ac:#f2c14e;--ok:#4ade80;--bad:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,"Noto Sans Bengali",sans-serif;padding-bottom:40px}
+header{padding:22px 16px 10px;text-align:center}
+h1{margin:0;font-size:26px;letter-spacing:.5px}
+header p{margin:4px 0 0;color:var(--mu)}
+nav{display:flex;gap:6px;padding:8px 12px;position:sticky;top:0;background:var(--bg);z-index:5;overflow-x:auto}
+nav button{flex:1;white-space:nowrap}
+button,input,select{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:9px 12px}
+button{cursor:pointer}
+button.on,button.pri{background:var(--ac);color:#1b1b1b;border-color:var(--ac);font-weight:600}
+button.bad{border-color:var(--bad);color:var(--bad)}
+main{padding:8px 12px;max-width:760px;margin:auto}
+h2{font-size:18px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden}
+th,td{padding:7px 5px;text-align:center;font-size:13px;border-bottom:1px solid var(--line)}
+th{color:var(--mu);font-weight:500}
+td.n{text-align:left;display:flex;align-items:center;gap:8px;min-width:130px}
+tr.q td{background:#1b4a2c}
+tr.q td:first-child{box-shadow:inset 3px 0 var(--ac)}
+.lg{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#fff2;flex:none}
+.fx{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0}
+.fx .t{flex:1;display:flex;align-items:center;gap:6px;min-width:0;font-size:13px}
+.fx .t:last-of-type{justify-content:flex-end;text-align:right}
+.fx .s{min-width:62px;text-align:center;font-weight:700}
+.tag{font-size:11px;color:var(--ac)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.row>*{flex:1;min-width:120px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--ac);border-radius:12px;width:min(92vw,340px)}
+dialog::backdrop{background:#000a}
+dialog input{width:64px;text-align:center;font-size:20px}
+.mu{color:var(--mu);font-size:13px}
+.br{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.bcol{display:flex;flex-direction:column;justify-content:space-around;gap:6px}.bt{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:11px}.bt div{display:flex;justify-content:space-between;gap:4px}.bt .w{color:var(--ac);font-weight:700}
+select{max-width:100%}
+.champ{text-align:center;border-color:var(--ac);padding:16px}
+</style></head><body>
+<header><h1>⚽ eFootball Solo Cup</h1><p id="sub">Loading…</p></header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<dialog id="dlg"><div id="dbody"></div></dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ====== এখানে নিজের Firebase config বসান ======
+const CFG={apiKey:"AIzaSyDi_NxS0hOj4W_tIsEgWf6lTNMRTusuYAA",authDomain:"e-football-124f7.firebaseapp.com",projectId:"e-football-124f7",appId:"1:1004919575376:web:3a413983b9dd1ca657d255"};
+// ===============================================
+firebase.initializeApp(CFG);
+const db=firebase.firestore(),au=firebase.auth();
+let MG={},KM=[],P=[],S=null,K=null,R={},Q={},admin=false,tab='table',grp='A',day=1;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pl=id=>P.find(p=>p.id===id);
+const logo=p=>p&&p.logo?`<img class="lg" src="${p.logo}">`:`<span class="lg"></span>`;
+const nm=p=>p?`${esc(p.club)} <span class="mu">(${esc(p.name)})</span>`:'—';
+db.collection('players').onSnapshot(s=>{P=s.docs.map(d=>({id:d.id,...d.data()}));draw()});
+db.doc('meta/state').onSnapshot(s=>{S=s.exists?s.data():null;draw()});
+db.doc('meta/ko').onSnapshot(s=>{K=s.exists?s.data():null;draw()});
+db.collection('results').onSnapshot(s=>{R={};s.forEach(d=>R[d.id]=d.data());draw()});
+db.collection('pending').onSnapshot(s=>{Q={};s.forEach(d=>Q[d.id]=d.data());draw()});
+au.onAuthStateChanged(u=>{admin=!!u;draw()});
+
+function table(g){
+  const T={};
+  P.filter(p=>S.grp[p.id]===g).forEach(p=>T[p.id]={p,pl:0,w:0,d:0,l:0,gf:0,ga:0,pt:0});
+  S.fx.filter(f=>f.g===g&&R[f.id]).forEach(f=>{
+    const r=R[f.id],h=T[f.h],a=T[f.a];if(!h||!a)return;
+    h.pl++;a.pl++;h.gf+=r.hg;h.ga+=r.ag;a.gf+=r.ag;a.ga+=r.hg;
+    if(r.hg>r.ag){h.w++;a.l++;h.pt+=3}else if(r.hg<r.ag){a.w++;h.l++;a.pt+=3}else{h.d++;a.d++;h.pt++;a.pt++}
+  });
+  return Object.values(T).sort((x,y)=>y.pt-x.pt||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);
+}
+function vTable(){
+  if(!S)return '<div class="box">ড্র এখনো হয়নি। অ্যাডমিন ড্র করলেই গ্রুপ এখানে দেখা যাবে।</div>';
+  return ['A','B'].map(g=>`<h2>Group ${g}</h2><table><tr><th></th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>`+
+   table(g).map((t,i)=>`<tr class="${i<4?'q':''}"><td class="n">${logo(t.p)}<span>${esc(t.p.club)}<br><span class="mu">${esc(t.p.name)}</span></span></td><td>${t.pl}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}</td><td>${t.ga}</td><td>${t.gf-t.ga}</td><td><b>${t.pt}</b></td></tr>`).join('')+'</table>').join('')+
+   '<p class="mu">হাইলাইট করা ৪ জন করে মোট ৮ জন নকআউটে যাবে।</p>';
+}
+function vFix(){
+  if(!S)return '<div class="box">ড্র হওয়ার পর ম্যাচ দেখা যাবে।</div>';
+  const days=Math.max(...S.fx.map(f=>f.d)),rel=S.open??1,op=admin?days:Math.min(rel,days);if(day>op)day=op;
+  const list=S.fx.filter(f=>f.g===grp&&f.d===day).map(f=>{
+    const r=R[f.id],q=Q[f.id];
+    const sc=r?`${r.hg} - ${r.ag}`:q?`<span class="tag">অপেক্ষায়<br>${q.hg}-${q.ag}</span>`:'vs';
+    const btn=r?(admin?`<button onclick="openScore('${f.id}','${f.h}','${f.a}')">✎</button>`:''):`<button onclick="openScore('${f.id}','${f.h}','${f.a}')">স্কোর</button>`;
+    return `<div class="fx"><div class="t">${logo(pl(f.h))}<span>${nm(pl(f.h))}</span></div><div class="s">${sc}</div><div class="t"><span>${nm(pl(f.a))}</span>${logo(pl(f.a))}</div>${btn}${admin?`<button onclick="editFx('${f.id}')">⚙</button>`:''}</div>`;
+  }).join('');
+  return `<div class="row"><button class="${grp==='A'?'on':''}" onclick="grp='A';draw()">Group A</button><button class="${grp==='B'?'on':''}" onclick="grp='B';draw()">Group B</button></div>
+  <div class="row"><select onchange="day=+this.value;draw()">${Array.from({length:op},(_,i)=>`<option value="${i+1}" ${day===i+1?'selected':''}>Day ${i+1}${i+1>rel?' 🔒 (বন্ধ)':''}</option>`).join('')}</select></div>${list}`;
+}
+function vPlayers(){
+  if(!P.length)return '<div class="box">এখনো কোনো প্লেয়ার যোগ হয়নি।</div>';
+  return `<h2>${P.length} জন প্লেয়ার</h2>`+P.map(p=>`<div class="fx"><div class="t">${logo(p)}<b>${esc(p.club)}</b></div><div class="mu">${esc(p.name)}${S?` · ${S.grp[p.id]}`:''}</div></div>`).join('');
+}
+function vAdmin(){
+  if(!admin)return `<div class="box"><b>অ্যাডমিন লগইন</b><div class="row"><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Password"></div><button class="pri" onclick="login()">Login</button></div>`;
+  const pend=Object.entries(Q).map(([id,q])=>{const f=legInfo(id);if(!f)return '';
+    return `<div class="fx"><div class="t">${esc(pl(f.h)?.club)}</div><div class="s">${q.hg} - ${q.ag}</div><div class="t">${esc(pl(f.a)?.club)}</div><button class="pri" onclick="approve('${id}')">✓</button><button class="bad" onclick="db.doc('pending/${id}').delete()">✕</button></div>`}).join('')||'<p class="mu">কোনো পেন্ডিং রেজাল্ট নেই।</p>';
+  if(S&&!Object.keys(MG).length)MG={...S.grp};
+  const mx=S?Math.max(...S.fx.map(f=>f.d)):0,op=S?Math.min(S.open??1,mx):0;
+  const dayBox=S?`<div class="box"><b>ম্যাচ ডে (এখন খোলা: Day ${op}/${mx})</b><p class="mu">শুধু খোলা দিনের ম্যাচ প্লেয়াররা দেখবে ও স্কোর দিতে পারবে।</p><div class="row"><button class="pri" onclick="setOpen(${Math.min(op+1,mx)})">Day ${Math.min(op+1,mx)} খুলুন</button><button onclick="setOpen(${mx})">সব দিন খুলুন</button><button class="bad" onclick="setOpen(${Math.max(op-1,1)})">একদিন বন্ধ করুন</button></div></div>`:'';
+  const grpBox=P.length?`<div class="box"><b>ম্যানুয়াল গ্রুপ (A / B)</b><p class="mu">নিজে গ্রুপ ঠিক করতে চাইলে বেছে নিয়ে সেভ করুন। এতে ফিক্সচার নতুন করে তৈরি হবে ও পুরনো রেজাল্ট মুছে যাবে।</p>${P.map(p=>`<div class="fx"><div class="t">${logo(p)}${esc(p.club)}</div><button class="${MG[p.id]==='A'?'on':''}" onclick="setG('${p.id}','A')">A</button><button class="${MG[p.id]==='B'?'on':''}" onclick="setG('${p.id}','B')">B</button></div>`).join('')}<button class="pri" onclick="saveGroups()">গ্রুপ সেভ করুন</button></div>`:'';
+  const kv=KM.length?KM:(K?K.q:[{},{},{},{}]);
+  const koBox=S?`<div class="box"><b>নকআউট ব্র্যাকেট (ম্যানুয়াল)</b><p class="mu">কোয়ার্টার ফাইনালে কে কার সাথে খেলবে নিজে ঠিক করুন।</p>${[0,1,2,3].map(i=>`<div class="mu">Quarter-final ${i+1}</div><div class="row"><select onchange="setKM(${i},'a',this.value)">${koOpts((kv[i]||{}).a)}</select><select onchange="setKM(${i},'b',this.value)">${koOpts((kv[i]||{}).b)}</select></div>`).join('')}<button class="pri" onclick="saveKO()">ব্র্যাকেট সেভ করুন</button></div>`:'';
+  const extra=dayBox+grpBox+koBox;
+  return `<div class="box"><b>পেন্ডিং রেজাল্ট</b>${pend}</div>
+  <div class="box"><b>প্লেয়ার যোগ করুন</b><div class="row"><input id="pn" placeholder="প্লেয়ারের নাম"><input id="pc" placeholder="ক্লাবের নাম" oninput="clearTimeout(window._lt);window._lt=setTimeout(findLogo,800)"></div><div class="row"><button onclick="findLogo()">🔍 লোগো খুঁজুন</button></div><div id="lp" class="row">${lpMsg}</div><div class="row"><input id="pf" type="file" accept="image/*"></div><button class="pri" onclick="addP()">যোগ করুন</button></div>
+  <div class="box"><b>ড্র</b><p class="mu">সব প্লেয়ার যোগ হলে ড্র দিন। আবার ড্র দিলে সব রেজাল্ট মুছে যাবে।</p><button class="pri" onclick="doDraw()">🎲 ড্র করুন</button> <button class="pri" onclick="genKO()">🏆 নকআউট শুরু করুন</button> <button onclick="au.signOut()">Logout</button></div>
+  ${extra}
+  ${S?'':P.map(p=>`<div class="fx"><div class="t">${logo(p)}${esc(p.club)} (${esc(p.name)})</div><button class="bad" onclick="db.doc('players/${p.id}').delete()">✕</button></div>`).join('')}`;
+}
+function draw(){
+  const tabs=[['table','Table'],['fix','Matches'],['ko','Knockout'],['pl','Players'],['ad','Admin']];
+  document.getElementById('nav').innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';draw()">${l}</button>`).join('');
+  document.getElementById('sub').textContent=S?`${P.length} players · 2 groups · Live`:'Draw pending';
+  const v={table:vTable,fix:vFix,ko:vKO,pl:vPlayers,ad:vAdmin}[tab]();
+  const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&tab==='ad'&&a.id)return;
+  document.getElementById('app').innerHTML=v;
+}
+function login(){au.signInWithEmailAndPassword(em.value,pw.value).catch(e=>alert('Login failed: '+e.code))}
+function img(f){return new Promise(r=>{const i=new Image;i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const m=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,96,96);r(c.toDataURL('image/jpeg',.8))};i.src=URL.createObjectURL(f)})}
+let autoLogo='',lpMsg='<span class="mu">ক্লাবের নাম লিখলে লোগো অটো খোঁজা হবে।</span>';
+function setLp(h){lpMsg=h;const e=document.getElementById('lp');if(e)e.innerHTML=h}
+async function findLogo(){
+  const q=pc.value.trim();autoLogo='';
+  if(!q){setLp('');return}
+  setLp('<span class="mu">লোগো খুঁজছি…</span>');
+  let err='';
+  try{
+    const r=await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=200&gsrsearch='+encodeURIComponent(q+' football club'));
+    const j=await r.json(),p=Object.values((j.query||{}).pages||{})[0];
+    if(p&&p.thumbnail)autoLogo=p.thumbnail.source;
+  }catch(e){err='Wikipedia: '+e.message}
+  if(!autoLogo)try{
+    const r=await fetch('https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t='+encodeURIComponent(q));
+    const t=((await r.json()).teams||[])[0];if(t)autoLogo=t.strBadge||t.strTeamBadge||'';
+  }catch(e){err+=' SportsDB: '+e.message}
+  setLp(autoLogo?`<img class="lg" style="width:56px;height:56px" src="${esc(autoLogo)}"> <span class="mu">এই লোগো বসবে। ভুল হলে নিচে ছবি আপলোড করুন।</span>`:`<span class="mu">লোগো পাওয়া যায়নি${err?' ('+esc(err)+')':''}। ইংরেজিতে পুরো নাম লিখুন বা নিচে ছবি আপলোড করুন।</span>`);
+}
+async function addP(){
+  if(!pn.value||!pc.value)return alert('নাম ও ক্লাব দিন');
+  const logo=pf.files[0]?await img(pf.files[0]):autoLogo;autoLogo='';lpMsg='<span class="mu">ক্লাবের নাম লিখলে লোগো অটো খোঁজা হবে।</span>';
+  await db.collection('players').add({name:pn.value.trim(),club:pc.value.trim(),logo});
+  tab='ad';draw();
+}
+function openScore(id,h,a){
+  const f={h,a},r=R[id]||{};
+  dbody.innerHTML=`<p><b>${esc(pl(f.h)?.club)}</b> vs <b>${esc(pl(f.a)?.club)}</b></p><div class="row" style="justify-content:center;align-items:center"><input id="hg" type="number" min="0" value="${r.hg??''}"> - <input id="ag" type="number" min="0" value="${r.ag??''}"></div><p class="mu">${admin?'অ্যাডমিন: সরাসরি সেভ হবে।':'অ্যাডমিন অ্যাপ্রুভ করলে স্কোর কাউন্ট হবে।'}</p><div class="row"><button onclick="dlg.close()">বাতিল</button><button class="pri" onclick="sendScore('${id}')">জমা দিন</button></div>`;
+  dlg.showModal();
+}
+async function sendScore(id){
+  const h=parseInt(hg.value),a=parseInt(ag.value);
+  if(isNaN(h)||isNaN(a)||h<0||a<0)return alert('সঠিক স্কোর দিন');
+  try{
+    if(admin){await db.doc('results/'+id).set({hg:h,ag:a});await db.doc('pending/'+id).delete()}
+    else await db.doc('pending/'+id).set({hg:h,ag:a,t:Date.now()});
+    dlg.close();
+  }catch(e){alert('জমা হয়নি: এই ম্যাচের রেজাল্ট হয়তো আগেই অ্যাপ্রুভ হয়েছে।')}
+}
+async function approve(id){const q=Q[id];await db.doc('results/'+id).set({hg:q.hg,ag:q.ag});await db.doc('pending/'+id).delete()}
+
+function legInfo(id){
+  const f=S&&S.fx.find(x=>x.id===id);if(f)return f;
+  const t=ties().find(x=>x.id===id.split('_')[0]);if(!t)return null;
+  return id.endsWith('_1')?{h:t.a,a:t.b}:{h:t.b,a:t.a};
+}
+function agg(t){const l1=R[t.id+'_1'],l2=R[t.id+'_2'];let ga=0,gb=0;if(l1){ga+=l1.hg;gb+=l1.ag}if(l2){ga+=l2.ag;gb+=l2.hg}return{ga,gb,done:!!(l1&&l2)}}
+function winner(t){if(!t.a||!t.b)return null;const g=agg(t);if(!g.done)return null;return g.ga>g.gb?t.a:g.gb>g.ga?t.b:((K.win||{})[t.id]||null)}
+function ties(){
+  if(!K)return [];
+  const T=K.q.map((p,i)=>({id:'Q'+(i+1),n:'Quarter-final '+(i+1),a:p.a,b:p.b}));
+  T.push({id:'S1',n:'Semi-final 1',a:winner(T[0]),b:winner(T[1])},{id:'S2',n:'Semi-final 2',a:winner(T[2]),b:winner(T[3])});
+  T.push({id:'F',n:'Final',a:winner(T[4]),b:winner(T[5])});
+  return T;
+}
+function vKO(){
+  if(!K)return '<div class="box">গ্রুপ পর্ব শেষ হলে অ্যাডমিন নকআউট শুরু করবে।</div>';
+  const T=ties(),ch=winner(T[6]);
+  return (ch?`<div class="box champ">🏆 চ্যাম্পিয়ন<br><b style="font-size:22px">${logo(pl(ch))} ${esc(pl(ch)?.club)}</b><br><span class="mu">${esc(pl(ch)?.name)}</span></div>`:'')+
+  '<h2>ব্র্যাকেট</h2>'+bracket(T)+
+  T.map(t=>{
+    const g=agg(t),w=winner(t);
+    const leg=(n,h,a)=>{
+      const id=t.id+'_'+n,r=R[id],q=Q[id];
+      const sc=r?`${r.hg} - ${r.ag}`:q?`<span class="tag">অপেক্ষায়<br>${q.hg}-${q.ag}</span>`:'vs';
+      const btn=r?(admin?`<button onclick="openScore('${id}','${h}','${a}')">✎</button>`:''):`<button onclick="openScore('${id}','${h}','${a}')">স্কোর</button>`;
+      return `<div class="mu">Leg ${n} · ${esc(pl(h)?.club)}-এর রুমে</div><div class="fx"><div class="t">${logo(pl(h))}<span>${esc(pl(h)?.club)}</span></div><div class="s">${sc}</div><div class="t"><span>${esc(pl(a)?.club)}</span>${logo(pl(a))}</div>${btn}</div>`;
+    };
+    let body;
+    if(!t.a||!t.b)body='<div class="box mu">আগের রাউন্ডের বিজয়ীর অপেক্ষায়…</div>';
+    else body=leg(1,t.a,t.b)+leg(2,t.b,t.a)+`<div class="mu">Aggregate: ${esc(pl(t.a)?.club)} ${g.ga} - ${g.gb} ${esc(pl(t.b)?.club)}${w?` · বিজয়ী: <b>${esc(pl(w)?.club)}</b>`:''}</div>`+
+      (admin&&g.done&&g.ga===g.gb?`<div class="row"><button onclick="setWin('${t.id}','${t.a}')">${esc(pl(t.a)?.club)} জিতেছে</button><button onclick="setWin('${t.id}','${t.b}')">${esc(pl(t.b)?.club)} জিতেছে</button></div>`:'');
+    return `<h2>${t.n}</h2>${body}`;
+  }).join('');
+}
+function bt(t){
+  const g=agg(t),w=winner(t),any=R[t.id+'_1']||R[t.id+'_2'];
+  const row=(id,n)=>`<div class="${w&&w===id?'w':''}"><span>${esc(pl(id)?.club||'TBD')}</span><span>${any&&id?n:''}</span></div>`;
+  return `<div class="bt">${row(t.a,g.ga)}${row(t.b,g.gb)}</div>`;
+}
+function bracket(T){
+  return `<div class="br"><div class="bcol"><div class="mu">Quarter</div>${T.slice(0,4).map(bt).join('')}</div><div class="bcol"><div class="mu">Semi</div>${T.slice(4,6).map(bt).join('')}</div><div class="bcol"><div class="mu">Final</div>${bt(T[6])}</div></div>`;
+}
+function setWin(id,pid){db.doc('meta/ko').update({['win.'+id]:pid})}
+async function genKO(){
+  if(!S)return alert('আগে ড্র করুন');
+  const A=table('A').slice(0,4).map(t=>t.p.id),B=table('B').slice(0,4).map(t=>t.p.id).sort(()=>Math.random()-.5);
+  if(A.length<4||B.length<4)return alert('প্রতি গ্রুপে কমপক্ষে ৪ জন লাগবে');
+  if(!confirm('প্রতি গ্রুপের টপ ৪ জন নিয়ে নকআউট শুরু হবে।'+(K?' আগের নকআউট রেজাল্ট মুছে যাবে।':'')+' নিশ্চিত?'))return;
+  const b=db.batch(),ko=/^[QSF]/;
+  Object.keys(R).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.set(db.doc('meta/ko'),{q:A.map((a,i)=>({a,b:B[i]})),win:{}});
+  await b.commit();tab='ko';draw();
+}
+function rr(ids,g){
+  const a=ids.slice();if(a.length%2)a.push(null);const n=a.length,fx=[];
+  for(let r=0;r<n-1;r++){
+    for(let i=0;i<n/2;i++){const h=a[i],b=a[n-1-i];if(h&&b)fx.push({id:`${g}${r+1}_${i}`,g,d:r+1,h:r%2?b:h,a:r%2?h:b})}
+    a.splice(1,0,a.pop());
+  }
+  return fx;
+}
+async function doDraw(){
+  if(P.length<4)return alert('কমপক্ষে ৪ জন প্লেয়ার লাগবে');
+  if(S&&!confirm('আবার ড্র দিলে সব রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  const ids=P.map(p=>p.id).sort(()=>Math.random()-.5),half=Math.ceil(ids.length/2);
+  await applyGroups(ids.slice(0,half),ids.slice(half));
+}
+async function applyGroups(A,B){
+  const grpMap={};
+  A.forEach(i=>grpMap[i]='A');B.forEach(i=>grpMap[i]='B');
+  const b=db.batch();
+  Object.keys(R).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.delete(db.doc('meta/ko'));
+  b.set(db.doc('meta/state'),{grp:grpMap,open:1,fx:[...rr(A,'A'),...rr(B,'B')]});
+  await b.commit();KM=[];tab='table';draw();
+}
+function editFx(id){
+  const f=S.fx.find(x=>x.id===id),mx=Math.max(...S.fx.map(x=>x.d));
+  const op=sel=>P.filter(p=>S.grp[p.id]===f.g).map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.club)} (${esc(p.name)})</option>`).join('');
+  dbody.innerHTML=`<p><b>ম্যাচ এডিট · Group ${f.g}</b></p><div class="mu">Home (Leg-এর প্রথম টিম) ও Away</div><div class="row"><select id="eh">${op(f.h)}</select><select id="ea">${op(f.a)}</select></div><div class="mu">ম্যাচ ডে</div><div class="row"><select id="ed">${Array.from({length:mx},(_,i)=>`<option value="${i+1}" ${f.d===i+1?'selected':''}>Day ${i+1}</option>`).join('')}</select></div><p class="mu">টিম বদলালে এই ম্যাচের আগের রেজাল্ট মুছে যাবে।</p><div class="row"><button onclick="dlg.close()">বাতিল</button><button class="pri" onclick="saveFx('${id}')">সেভ</button></div>`;
+  dlg.showModal();
+}
+async function saveFx(id){
+  const h=eh.value,a=ea.value,d=+ed.value;
+  if(h===a)return alert('দুটো আলাদা টিম বেছে নিন');
+  const f=S.fx.find(x=>x.id===id),changed=h!==f.h||a!==f.a;
+  if(changed&&(R[id]||Q[id])&&!confirm('এই ম্যাচের রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  if(S.fx.some(x=>x.id!==id&&x.g===f.g&&((x.h===h&&x.a===a)||(x.h===a&&x.a===h)))&&!confirm('এই দুই টিমের ম্যাচ আগে থেকেই আছে। তবুও সেভ করবেন?'))return;
+  if(S.fx.some(x=>x.id!==id&&x.d===d&&[x.h,x.a].some(p=>p===h||p===a))&&!confirm('ওই দিনে এই দুই টিমের কারো আরেকটা ম্যাচ আছে। তবুও সেভ করবেন?'))return;
+  await db.doc('meta/state').update({fx:S.fx.map(x=>x.id===id?{...x,h,a,d}:x)});
+  if(changed){await db.doc('results/'+id).delete();await db.doc('pending/'+id).delete()}
+  dlg.close();
+}
+function setOpen(n){db.doc('meta/state').update({open:n})}
+function setG(id,g){MG[id]=g;draw()}
+async function saveGroups(){
+  const A=P.filter(p=>MG[p.id]==='A').map(p=>p.id),B=P.filter(p=>MG[p.id]==='B').map(p=>p.id);
+  if(A.length+B.length<P.length)return alert('সবার গ্রুপ বেছে নিন');
+  if(A.length<2||B.length<2)return alert('প্রতি গ্রুপে কমপক্ষে ২ জন লাগবে');
+  if(S&&!confirm('গ্রুপ বদলালে ফিক্সচার নতুন হবে ও সব রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  await applyGroups(A,B);
+}
+function koOpts(sel){return '<option value="">— বেছে নিন —</option>'+P.map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.club)} (${S&&S.grp[p.id]||'-'})</option>`).join('')}
+function setKM(i,k,v){if(!KM.length)KM=K?K.q.map(x=>({...x})):[{},{},{},{}];KM[i][k]=v}
+async function saveKO(){
+  const q=KM.length?KM:(K?K.q:[]);
+  const ids=q.flatMap(x=>[x.a,x.b]);
+  if(q.length<4||ids.some(x=>!x))return alert('৪টা ম্যাচের সব টিম বেছে নিন');
+  if(new Set(ids).size<8)return alert('একই টিম দুইবার দেওয়া যাবে না');
+  if(!confirm('ব্র্যাকেট সেভ হবে।'+(K?' আগের নকআউট রেজাল্ট মুছে যাবে।':'')+' নিশ্চিত?'))return;
+  const b=db.batch(),ko=/^[QSF]/;
+  Object.keys(R).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.set(db.doc('meta/ko'),{q:q.map(x=>({a:x.a,b:x.b})),win:{}});
+  await b.commit();KM=[];tab='ko';draw();
+}
+</script>
+</body></html>
