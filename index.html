@@ -56,7 +56,7 @@ const CFG={apiKey:"AIzaSyDi_NxS0hOj4W_tIsEgWf6lTNMRTusuYAA",authDomain:"e-footba
 // ===============================================
 firebase.initializeApp(CFG);
 const db=firebase.firestore(),au=firebase.auth();
-let sk='d',MG={},KM=[],P=[],S=null,K=null,R={},Q={},admin=false,tab='table',grp='A',day=1;
+let dayUser=false,sk='d',MG={},KM=[],P=[],S=null,K=null,R={},Q={},admin=false,tab='table',grp='A',day=1;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pl=id=>P.find(p=>p.id===id);
 const ini=p=>{const w=String(p.club||'?').trim().split(/\s+/);return esc(((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase())};
@@ -91,7 +91,7 @@ function vTable(){
 }
 function vFix(){
   if(!S)return '<div class="box">ড্র হওয়ার পর ম্যাচ দেখা যাবে।</div>';
-  const days=Math.max(...S.fx.map(f=>f.d)),rel=S.open??1,op=admin?days:Math.min(rel,days);if(day>op)day=op;
+  const days=Math.max(...S.fx.map(f=>f.d)),rel=S.open??1,op=admin?days:Math.min(rel,days),latest=Math.min(rel,days);if(!dayUser)day=latest;if(day>op)day=op;
   const list=S.fx.filter(f=>f.g===grp&&f.d===day).map(f=>{
     const r=R[f.id],q=Q[f.id];
     const sc=r?`${r.hg} - ${r.ag}`:q&&admin?`<span class="tag">অপেক্ষায়<br>${q.hg}-${q.ag}</span>`:'vs';
@@ -99,7 +99,7 @@ function vFix(){
     return `<div class="fx"><div class="t">${logo(pl(f.h))}<span>${nm(pl(f.h))}</span></div><div class="s">${sc}</div><div class="t"><span>${nm(pl(f.a))}</span>${logo(pl(f.a))}</div>${btn}${admin?`<button onclick="editFx('${f.id}')">⚙</button>`:''}</div>`;
   }).join('');
   return `<div class="row"><button class="${grp==='A'?'on':''}" onclick="grp='A';draw()">Group A</button><button class="${grp==='B'?'on':''}" onclick="grp='B';draw()">Group B</button></div>
-  <div class="row"><select onchange="day=+this.value;draw()">${Array.from({length:op},(_,i)=>`<option value="${i+1}" ${day===i+1?'selected':''}>Day ${i+1}${i+1>rel?' 🔒 (বন্ধ)':''}</option>`).join('')}</select></div>${list}`;
+  <div class="row"><select onchange="day=+this.value;dayUser=true;draw()">${Array.from({length:op},(_,i)=>op-i).map(n=>`<option value="${n}" ${day===n?'selected':''}>Day ${n}${n>rel?' 🔒 (বন্ধ)':''}${n===latest?' · সর্বশেষ':''}</option>`).join('')}</select></div>${list}`;
 }
 function vPlayers(){
   if(!P.length)return '<div class="box">এখনো কোনো প্লেয়ার যোগ হয়নি।</div>';
@@ -193,7 +193,7 @@ async function newTour(){
   Object.keys(Q).forEach(k=>b.delete(db.doc('pending/'+k)));
   b.delete(db.doc('meta/state'));b.delete(db.doc('meta/ko'));
   b.set(db.doc('meta/cfg'),{showKO:false});
-  await b.commit();MG={};KM=[];day=1;tab='ad';draw();
+  await b.commit();MG={};KM=[];day=1;dayUser=false;tab='ad';draw();
 }
 async function addP(){
   if(!pn.value||!pc.value)return alert('নাম ও ক্লাব দিন');
@@ -476,7 +476,7 @@ async function shotStat(k){
   });
   foot(x,h);await saveImg(c,'Top-'+r.title.split(' ')[1]+'.png');
 }
-function setOpen(n){db.doc('meta/state').update({open:n})}
+function setOpen(n){dayUser=false;db.doc('meta/state').update({open:n})}
 function setG(id,g){MG[id]=g;draw()}
 async function saveGroups(){
   const A=P.filter(p=>MG[p.id]==='A').map(p=>p.id),B=P.filter(p=>MG[p.id]==='B').map(p=>p.id);
