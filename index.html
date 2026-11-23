@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="bn"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>eFootball Solo Cup</title>
+<title>eFootball Dynasty</title>
 <style>
 :root{--bg:#0a0f1e;--card:#121a30;--line:#26355f;--tx:#eef2ff;--mu:#8e9cc4;--ac:#38bdf8;--gold:#fbbf24;--ok:#4ade80;--bad:#f87171}
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(900px 420px at 50% -80px,#1a2a5e 0,var(--bg) 70%) no-repeat var(--bg);color:var(--tx);font:15px/1.45 system-ui,"Noto Sans Bengali",sans-serif;padding-bottom:40px}
 header{padding:22px 16px 10px;text-align:center}
 h1{margin:0;font-size:26px;letter-spacing:.5px}
-header p{margin:4px 0 0;color:var(--mu)}
+header p{margin:6px 0 0;color:var(--mu);font-size:13px}
+.tag2{margin-top:2px;font-size:15px;letter-spacing:3px;font-weight:600;color:var(--ac);text-transform:uppercase}
 nav{display:flex;gap:6px;padding:8px 12px;position:sticky;top:0;background:var(--bg);z-index:5;overflow-x:auto}
 nav button{flex:1;white-space:nowrap}
 button,input,select{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:9px 12px}
@@ -42,7 +43,7 @@ select{max-width:100%}
 .ini{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#04121f;background:linear-gradient(135deg,#38bdf8,#a78bfa)}
 label.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 12px;cursor:pointer}
 </style></head><body>
-<header><h1>⚽ eFootball Solo Cup</h1><p id="sub">Loading…</p></header>
+<header><h1>⚽ eFootball Dynasty</h1><div class="tag2">Solo Tournament</div><p id="sub">Loading…</p></header>
 <nav id="nav"></nav>
 <main id="app"></main>
 <dialog id="dlg"><div id="dbody"></div></dialog>
@@ -374,9 +375,10 @@ function fitTxt(x,t,w){t=String(t);if(x.measureText(t).width<=w)return t;while(t
 function rr2(x,px,py,w,h,r,fill){x.beginPath();if(x.roundRect)x.roundRect(px,py,w,h,r);else x.rect(px,py,w,h);x.fillStyle=fill;x.fill()}
 function head(x,title,sub){
   x.textBaseline='alphabetic';x.textAlign='center';
-  x.fillStyle='#eef2ff';x.font='800 54px '+FF;x.fillText('⚽ eFootball Solo Cup',540,88);
-  x.fillStyle='#38bdf8';x.font='700 38px '+FF;x.fillText(title,540,146);
-  if(sub){x.fillStyle='#8e9cc4';x.font='500 24px '+FF;x.fillText(sub,540,184)}
+  x.fillStyle='#eef2ff';x.font='800 54px '+FF;x.fillText('⚽ eFootball Dynasty',540,88);
+  x.fillStyle='#8e9cc4';x.font='600 22px '+FF;x.fillText('SOLO TOURNAMENT',540,120);
+  x.fillStyle='#38bdf8';x.font='700 36px '+FF;x.fillText(title,540,166);
+  if(sub){x.fillStyle='#8e9cc4';x.font='500 22px '+FF;x.fillText(sub,540,198)}
 }
 function foot(x,h){x.textBaseline='alphabetic';x.textAlign='center';x.fillStyle='#8e9cc4';x.font='500 22px '+FF;x.fillText('Updated '+new Date().toLocaleDateString('en-GB'),540,h-26)}
 function drawLogo(x,p,im,cx,cy,r){
