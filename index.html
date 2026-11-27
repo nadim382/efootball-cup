@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="bn"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0a1a78"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <title>eFootball Dynasty</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&display=swap" rel="stylesheet">
 <style>
@@ -47,7 +48,7 @@ select{max-width:100%}
 .ini{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#04121f;background:linear-gradient(135deg,#38bdf8,#a78bfa)}
 label.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 12px;cursor:pointer}
 </style></head><body>
-<header><h1>⚽ eFootball Dynasty</h1><div class="tag2">Solo Tournament</div><p id="sub">Loading…</p></header>
+<header><h1>⚽ eFootball Dynasty</h1><div class="tag2">Solo Tournament</div><p id="sub">Loading…</p><button id="inst" style="display:none;margin-top:8px" onclick="ip&&ip.prompt()">📲 অ্যাপ ইনস্টল করুন</button></header>
 <nav id="nav"></nav>
 <main id="app"></main>
 <dialog id="dlg"><div id="dbody"></div></dialog>
@@ -59,6 +60,10 @@ label.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;
 // ====== এখানে নিজের Firebase config বসান ======
 const CFG={apiKey:"AIzaSyDi_NxS0hOj4W_tIsEgWf6lTNMRTusuYAA",authDomain:"e-football-124f7.firebaseapp.com",projectId:"e-football-124f7",appId:"1:1004919575376:web:3a413983b9dd1ca657d255"};
 // ===============================================
+let ip=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;const b=document.getElementById('inst');if(b)b.style.display='inline-block'});
+addEventListener('appinstalled',()=>{ip=null;const b=document.getElementById('inst');if(b)b.style.display='none'});
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 firebase.initializeApp(CFG);
 const db=firebase.firestore(),au=firebase.auth();
 let dayUser=false,sk='d',MG={},KM=[],P=[],S=null,K=null,R={},Q={},admin=false,role=null,PM={},SA={},mySlot=0,roleLoading=false,tab='table',grp='A',day=1;
