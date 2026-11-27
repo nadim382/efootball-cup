@@ -155,7 +155,7 @@ function vAdmin(){
 
 function vMgr(){
   if(role!=='a1')return '';
-  return [2,3].map(n=>{
+  return seasonBox()+[2,3].map(n=>{
     const ent=Object.entries(SA).find(([e,d])=>d.slot===n),em=ent?ent[0]:'',pm=(ent&&ent[1].perms)||{};
     if(!em)return `<div class="box"><b>অ্যাডমিন ${n}</b><p class="mu">এখনো সেট করা হয়নি। জিমেইল ও পাসওয়ার্ড দিলে অ্যাকাউন্ট তৈরি হবে।</p><div class="row"><input id="ae${n}" type="email" placeholder="জিমেইল"><input id="ap${n}" type="text" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)"></div><button class="pri" onclick="mkAdmin(${n})">অ্যাডমিন ${n} তৈরি করুন</button></div>`;
     return `<div class="box"><b>অ্যাডমিন ${n}</b><p class="mu">জিমেইল: <b>${esc(em)}</b></p><div class="row"><button onclick="resetPw('${esc(em)}')">পাসওয়ার্ড রিসেট মেইল</button><button class="bad" onclick="rmAdmin('${esc(em)}')">অনুমতি তুলে নিন</button></div><p class="mu">কোন কাজ করতে পারবে:</p>${PERMS.map(([k,l])=>`<label class="fx" style="gap:10px"><input type="checkbox" ${pm[k]===true?'checked':''} onchange="setPerm('${esc(em)}','${k}',this.checked)"><span style="flex:1">${l}</span></label>`).join('')}</div>`;
@@ -184,10 +184,10 @@ function rmAdmin(em){if(role!=='a1')return;if(confirm(em+'-এর অ্যা�
 function resetPw(em){if(role!=='a1')return;au.sendPasswordResetEmail(em).then(()=>alert('পাসওয়ার্ড রিসেট মেইল পাঠানো হয়েছে।')).catch(e=>alert('পাঠানো যায়নি: '+(e.code||e.message)))}
 function draw(){
   if(tab==='ko'&&!CF.showKO&&!admin)tab='table';
-  const tabs=[['table','Table'],['fix','Matches'],['ko','Knockout'],['st','Stats'],['pl','Players'],['ad','Admin']].filter(t=>t[0]!=='ko'||CF.showKO||admin).map(t=>t[0]==='ko'&&!CF.showKO?[t[0],'Knockout 🔒']:t);
+  const tabs=[['table','Table'],['fix','Matches'],['ko','Knockout'],['st','Stats'],['pv','Previous Top Players'],['pl','Players'],['ad','Admin']].filter(t=>t[0]!=='ko'||CF.showKO||admin).map(t=>t[0]==='ko'&&!CF.showKO?[t[0],'Knockout 🔒']:t);
   document.getElementById('nav').innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';draw()">${l}</button>`).join('');
   document.getElementById('sub').textContent=S?`${P.length} players · 2 groups · Live`:'Draw pending';
-  const v={table:vTable,fix:vFix,ko:vKO,st:vStats,pl:vPlayers,ad:vAdmin}[tab]();
+  const v={table:vTable,fix:vFix,ko:vKO,st:vStats,pv:vPrev,pl:vPlayers,ad:vAdmin}[tab]();
   const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&tab==='ad'&&a.id)return;
   document.getElementById('app').innerHTML=v;
   const bk=document.getElementById('bkc');if(bk)paintBracket(bk);
@@ -242,13 +242,17 @@ async function saveLib(){if(!(can('addPlayer')))return alert('এই কাজ�
   await b.commit();alert('লোগো লাইব্রেরিতে সেভ হয়েছে। পরের টুর্নামেন্টে ক্লাবের নাম লিখলেই লোগো নিজে বসবে।');
 }
 function toggleKO(){if(!(can('koToggle')))return alert('এই কাজের অনুমতি নেই');db.doc('meta/cfg').set({showKO:!CF.showKO},{merge:true})}
-async function newTour(){if(!(role==='a1'))return alert('এই কাজের অনুমতি নেই');
+async function newTour(){
+  if(!(role==='a1'))return alert('এই কাজের অনুমতি নেই');
   if(!confirm('নতুন টুর্নামেন্ট: ড্র, ফিক্সচার, সব রেজাল্ট ও নকআউট মুছে যাবে। প্লেয়ার ও লোগো থাকবে। নিশ্চিত?'))return;
+  const cur=CF.season||1,rec=seasonRec();
+  if(rec){try{await db.doc('seasons/'+cur).set(rec)}catch(e){if(!confirm('সিজন রেকর্ড সেভ হয়নি (Firestore Rules-এ seasons যোগ করেছ কিনা দেখো)। তবুও নতুন টুর্নামেন্ট শুরু করবেন?'))return}}
+  else if(!confirm('ফাইনাল শেষ হয়নি, তাই Season '+cur+'-এর বিজয়ী রেকর্ড হবে না। তবুও শুরু করবেন?'))return;
   const b=db.batch();
   Object.keys(R).forEach(k=>b.delete(db.doc('results/'+k)));
   Object.keys(Q).forEach(k=>b.delete(db.doc('pending/'+k)));
   b.delete(db.doc('meta/state'));b.delete(db.doc('meta/ko'));
-  b.set(db.doc('meta/cfg'),{showKO:false});
+  b.set(db.doc('meta/cfg'),{showKO:false,season:cur+1},{merge:true});
   await b.commit();MG={};KM=[];day=1;dayUser=false;tab='ad';draw();
 }
 async function addP(){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
@@ -408,10 +412,10 @@ function vStats(){
   let a=stats(),title,row;
   if(sk==='d'){a.sort((x,y)=>x.ga/x.pl-y.ga/y.pl||y.pl-x.pl||x.ga-y.ga);title='সবচেয়ে কম গোল খায় (প্রতি ম্যাচে গড়)';row=t=>[(t.ga/t.pl).toFixed(2),t.pl+' ম্যাচ · '+t.ga+' গোল খেয়েছে']}
   else if(sk==='s'){a.sort((x,y)=>y.gf/y.pl-x.gf/x.pl||y.pl-x.pl||y.gf-x.gf);title='সবচেয়ে বেশি গোল করে (প্রতি ম্যাচে গড়)';row=t=>[(t.gf/t.pl).toFixed(2),t.pl+' ম্যাচ · '+t.gf+' গোল']}
-  else{a.sort((x,y)=>y.w-x.w||y.w/y.pl-x.w/x.pl||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);title='সবচেয়ে বেশি ম্যাচ জিতেছে';row=t=>[t.w,t.pl+' ম্যাচ · '+t.w+' জয় · '+t.l+' হার']}
+  else{a=topPlayers();title='সেরা প্লেয়ার (জয় ১, ড্র '+fmt(TP().d)+', নকআউট বোনাস)';row=t=>[fmt(t.pts),t.pl+' ম্যাচ · '+t.w+' জয় · '+t.d+' ড্র · '+t.l+' হার']}
   a=a.slice(0,8);
   return `<div class="row">${tabs.map(([k,l])=>`<button class="${sk===k?'on':''}" onclick="sk='${k}';draw()">${l}</button>`).join('')}</div><h2>${title}</h2>`+
-   (a.length?a.map((t,i)=>{const p=pl(t.id),[v,sub]=row(t);return `<div class="fx"><div class="s" style="min-width:26px">${i+1}</div><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div><div style="text-align:right"><b style="font-size:18px;color:var(--gold)">${v}</b><div class="mu" style="font-size:11px">${sub}</div></div></div>`}).join(''):'<div class="box">এখনো কোনো অ্যাপ্রুভ করা রেজাল্ট নেই।</div>')+'<p class="mu">শুধু অ্যাপ্রুভ হওয়া ম্যাচের হিসাবে। টপ ৮ জন।</p>';
+   (a.length?a.map((t,i)=>{const p=pl(t.id),[v,sub]=row(t);return `<div class="fx"><div class="s" style="min-width:26px">${i+1}</div><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div><div style="text-align:right"><b style="font-size:18px;color:var(--gold)">${v}</b><div class="mu" style="font-size:11px">${sub}</div></div></div>`}).join(''):'<div class="box">এখনো কোনো অ্যাপ্রুভ করা রেজাল্ট নেই।</div>')+'<p class="mu">শুধু অ্যাপ্রুভ হওয়া ম্যাচের হিসাবে। টপ ৮ জন।'+(sk==='p'?'<br>জয় = ১ পয়েন্ট, ড্র = ০ (শুধু গোনা হয়)। কোয়ার্টার ফাইনালে বিজয়ী ১.২৫, পরাজিত ০.২৫; ফাইনালে বিজয়ী ১.৫০, পরাজিত ০.৫০। নকআউটের হার এখানে গোনা হয় না।':'')+'</p>';
 }
 const FF='system-ui,"Noto Sans Bengali",sans-serif',imgCache={};
 const iniTxt=p=>{const w=String(p.club||'?').trim().split(/\s+/);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()};
@@ -527,10 +531,10 @@ async function shotAllDays(){
   for(let d=1;d<=mx;d++){setMsg('Day '+d+' ছবি তৈরি হচ্ছে…');await shotDay(d);await new Promise(r=>setTimeout(r,700))}
 }
 function rankStats(k){
-  const a=stats();let title,sub,row;
+  let a=stats();let title,sub,row;
   if(k==='d'){a.sort((x,y)=>x.ga/x.pl-y.ga/y.pl||y.pl-x.pl||x.ga-y.ga);title='Top Defender';sub='Fewest goals conceded per match';row=t=>[(t.ga/t.pl).toFixed(2),t.pl+' matches · '+t.ga+' conceded']}
   else if(k==='s'){a.sort((x,y)=>y.gf/y.pl-x.gf/x.pl||y.pl-x.pl||y.gf-x.gf);title='Top Scorer';sub='Most goals scored per match';row=t=>[(t.gf/t.pl).toFixed(2),t.pl+' matches · '+t.gf+' goals']}
-  else{a.sort((x,y)=>y.w-x.w||y.w/y.pl-x.w/x.pl||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);title='Top Player';sub='Most wins';row=t=>[String(t.w),t.pl+' matches · '+t.w+'W '+t.l+'L']}
+  else{a=topPlayers();title='Top Player';sub='Win 1 · Draw '+fmt(TP().d)+' · Knockout bonus';row=t=>[fmt(t.pts),t.pl+' P · '+t.w+'W '+t.d+'D '+t.l+'L']}
   return{title,sub,list:a.slice(0,8).map(t=>{const[v,s]=row(t);return{t,v,s}})};
 }
 async function shotStat(k){
@@ -594,6 +598,53 @@ async function paintBracket(c){
 async function shotBracket(){
   if(!K)throw new Error('নকআউট এখনো শুরু হয়নি');
   const[c,x]=newCanvas(1000);head(x,'Bracket','');await drawBr(x);foot(x,1000);await saveImg(c,'Bracket.png');
+}
+const fmt=v=>String(+v.toFixed(2));
+const TP=()=>({d:CF.tpDraw??.5,q:CF.tpQf??.25,s:CF.tpSf??0,f:CF.tpFin??.5});
+function topPlayers(){
+  const c=TP(),T={},g=id=>T[id]||(T[id]={id,pl:0,w:0,d:0,l:0,pts:0,gf:0,ga:0});
+  S.fx.forEach(f=>{
+    const r=R[f.id];if(!r)return;const h=g(f.h),a=g(f.a);
+    h.pl++;a.pl++;h.gf+=r.hg;h.ga+=r.ag;a.gf+=r.ag;a.ga+=r.hg;
+    if(r.hg>r.ag){h.w++;h.pts++;a.l++}else if(r.hg<r.ag){a.w++;a.pts++;h.l++}else{h.d++;a.d++;h.pts+=c.d;a.pts+=c.d}
+  });
+  ties().forEach(t=>{
+    const w=winner(t);if(!w)return;
+    const lo=w===t.a?t.b:t.a,bn=t.id[0]==='Q'?c.q:t.id[0]==='F'?c.f:c.s,W=g(w),Lz=g(lo);
+    W.pl++;Lz.pl++;W.w++;W.pts+=1+bn;Lz.pts+=bn;
+  });
+  return Object.values(T).filter(t=>pl(t.id)).sort((x,y)=>y.pts-x.pts||y.w-x.w||y.d-x.d||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);
+}
+let SEAS={};
+db.collection('seasons').onSnapshot(sn=>{SEAS={};sn.forEach(d=>SEAS[d.id]=d.data());draw()},()=>{});
+const snap=p=>p?{name:p.name,club:p.club,logo:p.logo||''}:{name:'?',club:'?',logo:''};
+function seasonRec(){
+  if(!K)return null;const F=ties()[6],ch=winner(F);if(!ch)return null;
+  const ru=ch===F.a?F.b:F.a;return{season:CF.season||1,champ:snap(pl(ch)),runner:snap(pl(ru)),t:Date.now()};
+}
+function vPrev(){
+  const cur=CF.season||1,items=Object.values(SEAS),live=SEAS[cur]?null:seasonRec();
+  if(live){live.live=true;items.push(live)}
+  items.sort((a,b)=>b.season-a.season);
+  if(!items.length)return `<div class="box">এখনো কোনো সিজন শেষ হয়নি। বর্তমান টুর্নামেন্ট: <b>Season ${cur}</b>। ফাইনাল শেষ হলে বিজয়ী ও রানার্স আপ এখানে দেখা যাবে।</div>`;
+  const row=(lab,p)=>`<div class="fx"><div class="s" style="min-width:96px;font-size:12px;text-align:left">${lab}</div><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div></div>`;
+  return items.map(it=>`<h2>Season ${it.season}${it.live?' <span class="mu">(সদ্য শেষ)</span>':''}</h2>`+row('🏆 Champion',it.champ)+row('🥈 Runner-up',it.runner)).join('');
+}
+function seasonBox(){
+  const cur=CF.season||1,ok=!!seasonRec(),tc=TP();
+  const tpBox=`<div class="box"><b>Top Player পয়েন্ট</b><p class="mu">গ্রুপে জয় ১ পয়েন্ট। বাকিগুলো এখান থেকে বদলানো যায়।</p><div class="row"><label class="mu">ড্র<input id="tpd" type="number" step="0.05" style="width:100%" value="${tc.d}"></label><label class="mu">Quarter বোনাস<input id="tpq" type="number" step="0.05" style="width:100%" value="${tc.q}"></label></div><div class="row"><label class="mu">Semi বোনাস<input id="tps" type="number" step="0.05" style="width:100%" value="${tc.s}"></label><label class="mu">Final বোনাস<input id="tpf" type="number" step="0.05" style="width:100%" value="${tc.f}"></label></div><button class="pri" onclick="saveTP()">সেভ</button></div>`;
+  return tpBox+`<div class="box"><b>সিজন ${cur} (চলছে)</b><p class="mu">ফাইনাল শেষ হলে বিজয়ী ও রানার্স আপ "Previous Top Players" ট্যাবে দেখায়। "নতুন টুর্নামেন্ট" চাপলে নিজে থেকে সেভ হয়ে সিজন নম্বর বাড়বে।</p>${ok?`<button class="pri" onclick="saveSeason()">💾 এখনই Season ${cur} সেভ করুন</button>`:'<p class="mu">ফাইনাল এখনো শেষ হয়নি।</p>'}</div>`;
+}
+function saveTP(){
+  if(role!=='a1')return alert('এই কাজের অনুমতি নেই');
+  const g=id=>parseFloat(document.getElementById(id).value),v=[g('tpd'),g('tpq'),g('tps'),g('tpf')];
+  if(v.some(n=>isNaN(n)||n<0||n>5))return alert('সঠিক সংখ্যা দিন');
+  db.doc('meta/cfg').set({tpDraw:v[0],tpQf:v[1],tpSf:v[2],tpFin:v[3]},{merge:true}).then(()=>alert('সেভ হয়েছে'));
+}
+async function saveSeason(){
+  if(role!=='a1')return alert('এই কাজের অনুমতি নেই');
+  const rec=seasonRec();if(!rec)return alert('ফাইনাল এখনো শেষ হয়নি');
+  try{await db.doc('seasons/'+rec.season).set(rec);alert('Season '+rec.season+' সেভ হয়েছে।')}catch(e){alert('সেভ হয়নি: '+(e.code||e.message)+' (Firestore Rules-এ seasons যোগ করেছ কিনা দেখো)')}
 }
 function setOpen(n){if(!(can('days')))return alert('এই কাজের অনুমতি নেই');dayUser=false;db.doc('meta/state').update({open:n})}
 function setG(id,g){MG[id]=g;draw()}
