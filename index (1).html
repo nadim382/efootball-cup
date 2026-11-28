@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0a1a78"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>eFootball Dynasty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#030a3d;--card:#0a1a78;--line:#2a45d6;--tx:#fff;--mu:#9db3ff;--ac:#35e0ff;--gold:#ffd166;--ok:#4ade80;--bad:#ff4d6d}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1000px 520px at 50% -120px,#1c3fe0 0,#06125f 50%,var(--bg) 100%) no-repeat var(--bg);color:var(--tx);font:15px/1.45 system-ui,"Noto Sans Bengali",sans-serif;padding-bottom:40px}
+header{padding:22px 16px 10px;text-align:center}
+h1{margin:0;font:italic 800 40px/1.1 'Barlow Condensed',system-ui,sans-serif;letter-spacing:.5px;text-transform:uppercase}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(120deg,transparent 55%,rgba(53,224,255,.12) 55.2%,transparent 56%),linear-gradient(60deg,transparent 72%,rgba(255,79,216,.10) 72.2%,transparent 73%)}
+nav button{border-radius:999px}
+.bkc{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);margin:8px 0}
+header p{margin:6px 0 0;color:var(--mu);font-size:13px}
+.tag2{margin-top:2px;font-size:15px;letter-spacing:3px;font-weight:600;color:var(--ac);text-transform:uppercase}
+nav{display:flex;gap:6px;padding:8px 12px;position:sticky;top:0;background:var(--bg);z-index:5;overflow-x:auto}
+nav button{flex:1;white-space:nowrap}
+button,input,select{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:9px 12px}
+button{cursor:pointer}
+button.on,button.pri{background:var(--ac);color:#04121f;border-color:var(--ac);font-weight:600}
+button.bad{border-color:var(--bad);color:var(--bad)}
+main{padding:8px 12px;max-width:760px;margin:auto}
+h2{font-size:18px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden}
+th,td{padding:7px 5px;text-align:center;font-size:13px;border-bottom:1px solid var(--line)}
+th{color:var(--mu);font-weight:500}
+td.n{text-align:left;display:flex;align-items:center;gap:8px;min-width:130px}
+tr.q td{background:#1230a8}
+tr.q td:first-child{box-shadow:inset 3px 0 var(--ac)}
+.lg{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#fff2;flex:none}
+.fx{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0}
+.fx .t{flex:1;display:flex;align-items:center;gap:6px;min-width:0;font-size:13px}
+.fx .t:last-of-type{justify-content:flex-end;text-align:right}
+.fx .s{min-width:62px;text-align:center;font-weight:700}
+.tag{font-size:11px;color:var(--ac)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.row>*{flex:1;min-width:120px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--ac);border-radius:12px;width:min(92vw,340px)}
+dialog::backdrop{background:#000a}
+dialog input{width:64px;text-align:center;font-size:20px}
+.mu{color:var(--mu);font-size:13px}
+.br{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.bcol{display:flex;flex-direction:column;justify-content:space-around;gap:6px}.bt{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:11px}.bt div{display:flex;justify-content:space-between;gap:4px}.bt .w{color:var(--gold);font-weight:700}
+select{max-width:100%}
+.champ{text-align:center;border-color:var(--gold);padding:16px}
+.ini{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#04121f;background:linear-gradient(135deg,#38bdf8,#a78bfa)}
+label.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 12px;cursor:pointer}
+</style></head><body>
+<header><h1>⚽ eFootball Dynasty</h1><div class="tag2">Solo Tournament</div><p id="sub">Loading…</p><button id="inst" style="display:none;margin-top:8px" onclick="ip&&ip.prompt()">📲 অ্যাপ ইনস্টল করুন</button></header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<dialog id="dlg"><div id="dbody"></div></dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ====== এখানে নিজের Firebase config বসান ======
+const CFG={apiKey:"AIzaSyDi_NxS0hOj4W_tIsEgWf6lTNMRTusuYAA",authDomain:"e-football-124f7.firebaseapp.com",projectId:"e-football-124f7",appId:"1:1004919575376:web:3a413983b9dd1ca657d255"};
+// ===============================================
+let ip=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;const b=document.getElementById('inst');if(b)b.style.display='inline-block'});
+addEventListener('appinstalled',()=>{ip=null;const b=document.getElementById('inst');if(b)b.style.display='none'});
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+firebase.initializeApp(CFG);
+const db=firebase.firestore(),au=firebase.auth();
+let dayUser=false,sk='d',MG={},KM=[],P=[],S=null,K=null,R={},Q={},admin=false,role=null,PM={},SA={},mySlot=0,roleLoading=false,tab='table',grp='A',day=1;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pl=id=>P.find(p=>p.id===id);
+const ini=p=>{const w=String(p.club||'?').trim().split(/\s+/);return esc(((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase())};
+const logo=p=>p&&p.logo?`<img class="lg" src="${p.logo}">`:p?`<span class="lg ini">${ini(p)}</span>`:`<span class="lg"></span>`;
+const nm=p=>p?`${esc(p.club)} <span class="mu">(${esc(p.name)})</span>`:'—';
+db.collection('players').onSnapshot(s=>{P=s.docs.map(d=>({id:d.id,...d.data()}));draw()});
+db.doc('meta/state').onSnapshot(s=>{S=s.exists?s.data():null;draw()});
+db.doc('meta/ko').onSnapshot(s=>{K=s.exists?s.data():null;draw()});
+db.collection('results').onSnapshot(s=>{R={};s.forEach(d=>R[d.id]=d.data());draw()});
+db.collection('pending').onSnapshot(s=>{Q={};s.forEach(d=>Q[d.id]=d.data());draw()});
+let CL={},CF={};
+const ckey=n=>String(n).trim().toLowerCase().replace(/[\/\s]+/g,'_');
+db.collection('clubs').onSnapshot(s=>{CL={};s.forEach(d=>CL[d.id]=d.data());draw()});
+db.doc('meta/cfg').onSnapshot(s=>{CF=s.exists?s.data():{};draw()});
+let unsubs=[];
+const can=p=>role==='a1'||(role==='sub'&&PM[p]===true);
+const direct=()=>can('approve')||can('editScore');
+const PERMS=[['addPlayer','নতুন প্লেয়ার যোগ / লোগো / এডিট'],['replace','প্লেয়ার বদল'],['ko','নকআউট ড্র / ব্র্যাকেট'],['shots','ছবি ডাউনলোড'],['approve','পেন্ডিং রেজাল্ট অ্যাপ্রুভ'],['editScore','অ্যাপ্রুভ হওয়া স্কোর এডিট'],['days','ম্যাচ ডে খোলা / বন্ধ'],['fixtureEdit','ম্যাচের টিম / ডে এডিট (⚙)'],['draw','গ্রুপ ড্র / ম্যানুয়াল গ্রুপ'],['koToggle','Knockout ট্যাব দেখানো / লুকানো']];
+au.onAuthStateChanged(async u=>{
+  unsubs.forEach(f=>f());unsubs=[];
+  role=null;PM={};SA={};mySlot=0;admin=false;roleLoading=!!u;draw();
+  if(u&&u.email){
+    const em=u.email.toLowerCase();
+    try{await db.doc('meta/_probe').set({t:Date.now()});role='a1'}
+    catch(e){
+      try{const d=await db.doc('subadmins/'+em).get();if(d.exists){role='sub';PM=d.data().perms||{};mySlot=d.data().slot||0}}catch(e2){}
+    }
+    if(role==='a1')unsubs.push(db.collection('subadmins').onSnapshot(sn=>{SA={};sn.forEach(d=>SA[d.id]=d.data());draw()},()=>{}));
+    if(role==='sub')unsubs.push(db.doc('subadmins/'+em).onSnapshot(d=>{if(d.exists){PM=d.data().perms||{};mySlot=d.data().slot||0}else{role=null;admin=false}draw()},()=>{}));
+  }
+  roleLoading=false;admin=!!role;draw();
+});
+
+function table(g){
+  const T={};
+  P.filter(p=>S.grp[p.id]===g).forEach(p=>T[p.id]={p,pl:0,w:0,d:0,l:0,gf:0,ga:0,pt:0});
+  S.fx.filter(f=>f.g===g&&R[f.id]).forEach(f=>{
+    const r=R[f.id],h=T[f.h],a=T[f.a];if(!h||!a)return;
+    h.pl++;a.pl++;h.gf+=r.hg;h.ga+=r.ag;a.gf+=r.ag;a.ga+=r.hg;
+    if(r.hg>r.ag){h.w++;a.l++;h.pt+=3}else if(r.hg<r.ag){a.w++;h.l++;a.pt+=3}else{h.d++;a.d++;h.pt++;a.pt++}
+  });
+  return Object.values(T).sort((x,y)=>y.pt-x.pt||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);
+}
+function vTable(){
+  if(!S)return '<div class="box">ড্র এখনো হয়নি। অ্যাডমিন ড্র করলেই গ্রুপ এখানে দেখা যাবে।</div>';
+  return ['A','B'].map(g=>`<h2>Group ${g}</h2><table><tr><th></th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>`+
+   table(g).map((t,i)=>`<tr class="${i<4?'q':''}"><td class="n">${logo(t.p)}<span>${esc(t.p.club)}<br><span class="mu">${esc(t.p.name)}</span></span></td><td>${t.pl}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}</td><td>${t.ga}</td><td>${t.gf-t.ga}</td><td><b>${t.pt}</b></td></tr>`).join('')+'</table>').join('')+
+   '<p class="mu">হাইলাইট করা ৪ জন করে মোট ৮ জন নকআউটে যাবে।</p>';
+}
+function vFix(){
+  if(!S)return '<div class="box">ড্র হওয়ার পর ম্যাচ দেখা যাবে।</div>';
+  const days=Math.max(...S.fx.map(f=>f.d)),rel=S.open??1,op=admin?days:Math.min(rel,days),latest=Math.min(rel,days);if(!dayUser)day=latest;if(day>op)day=op;
+  const list=S.fx.filter(f=>f.g===grp&&f.d===day).map(f=>{
+    const r=R[f.id],q=Q[f.id];
+    const sc=r?`${r.hg} - ${r.ag}`:q&&admin?`<span class="tag">অপেক্ষায়<br>${q.hg}-${q.ag}</span>`:'vs';
+    const btn=r?(can('editScore')?`<button onclick="openScore('${f.id}','${f.h}','${f.a}')">✎</button>`:''):`<button onclick="openScore('${f.id}','${f.h}','${f.a}')">স্কোর</button>`;
+    return `<div class="fx"><div class="t">${logo(pl(f.h))}<span>${nm(pl(f.h))}</span></div><div class="s">${sc}</div><div class="t"><span>${nm(pl(f.a))}</span>${logo(pl(f.a))}</div>${btn}${can('fixtureEdit')?`<button onclick="editFx('${f.id}')">⚙</button>`:''}</div>`;
+  }).join('');
+  return `<div class="row"><button class="${grp==='A'?'on':''}" onclick="grp='A';draw()">Group A</button><button class="${grp==='B'?'on':''}" onclick="grp='B';draw()">Group B</button></div>
+  <div class="row"><select onchange="day=+this.value;dayUser=true;draw()">${Array.from({length:op},(_,i)=>op-i).map(n=>`<option value="${n}" ${day===n?'selected':''}>Day ${n}${n>rel?' 🔒 (বন্ধ)':''}${n===latest?' · সর্বশেষ':''}</option>`).join('')}</select></div>${list}`;
+}
+function vPlayers(){
+  if(!P.length)return '<div class="box">এখনো কোনো প্লেয়ার যোগ হয়নি।</div>';
+  return `<h2>${P.length} জন প্লেয়ার</h2>`+P.map(p=>`<div class="fx"><div class="t">${logo(p)}<b>${esc(p.club)}</b></div><div class="mu">${esc(p.name)}${S&&S.grp[p.id]?` · ${S.grp[p.id]}`:''}</div></div>`).join('');
+}
+function vAdmin(){
+  if(roleLoading)return '<div class="box mu">লোড হচ্ছে…</div>';
+  if(!admin){const u=au.currentUser;if(u)return `<div class="box"><b>এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই</b><p class="mu">${esc(u.email)} — অ্যাডমিন 1 অনুমতি দিলে তবেই কাজ করবে।</p><button onclick="au.signOut()">Logout</button></div>`;return `<div class="box"><b>অ্যাডমিন লগইন</b><div class="row"><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Password"></div><button class="pri" onclick="login()">Login</button></div>`;}
+  const pend=Object.entries(Q).map(([id,q])=>{const f=legInfo(id);if(!f)return '';
+    return `<div class="fx"><div class="t">${esc(pl(f.h)?.club)}</div><div class="s">${q.hg} - ${q.ag}</div><div class="t">${esc(pl(f.a)?.club)}</div><button class="pri" onclick="approve('${id}')">✓</button><button class="bad" onclick="db.doc('pending/${id}').delete()">✕</button></div>`}).join('')||'<p class="mu">কোনো পেন্ডিং রেজাল্ট নেই।</p>';
+  if(S&&!Object.keys(MG).length)MG={...S.grp};
+  const mx=S?Math.max(...S.fx.map(f=>f.d)):0,op=S?Math.min(S.open??1,mx):0;
+  const dayBox=S&&can('days')?`<div class="box"><b>ম্যাচ ডে (এখন খোলা: Day ${op}/${mx})</b><p class="mu">শুধু খোলা দিনের ম্যাচ প্লেয়াররা দেখবে ও স্কোর দিতে পারবে।</p><div class="row"><button class="pri" onclick="setOpen(${Math.min(op+1,mx)})">Day ${Math.min(op+1,mx)} খুলুন</button><button onclick="setOpen(${mx})">সব দিন খুলুন</button><button class="bad" onclick="setOpen(${Math.max(op-1,1)})">একদিন বন্ধ করুন</button></div></div>`:'';
+  const grpBox=P.length&&can('draw')?`<div class="box"><b>ম্যানুয়াল গ্রুপ (A / B)</b><p class="mu">নিজে গ্রুপ ঠিক করতে চাইলে বেছে নিয়ে সেভ করুন। এতে ফিক্সচার নতুন করে তৈরি হবে ও পুরনো রেজাল্ট মুছে যাবে।</p>${P.map(p=>`<div class="fx"><div class="t">${logo(p)}${esc(p.club)}</div><button class="${MG[p.id]==='A'?'on':''}" onclick="setG('${p.id}','A')">A</button><button class="${MG[p.id]==='B'?'on':''}" onclick="setG('${p.id}','B')">B</button></div>`).join('')}<button class="pri" onclick="saveGroups()">গ্রুপ সেভ করুন</button></div>`:'';
+  const kv=KM.length?KM:(K?K.q:[{},{},{},{}]);
+  const koBox=S&&can('ko')?`<div class="box"><b>নকআউট ব্র্যাকেট (ম্যানুয়াল)</b><p class="mu">কোয়ার্টার ফাইনালে কে কার সাথে খেলবে নিজে ঠিক করুন।</p>${[0,1,2,3].map(i=>`<div class="mu">Quarter-final ${i+1}</div><div class="row"><select onchange="setKM(${i},'a',this.value)">${koOpts((kv[i]||{}).a)}</select><select onchange="setKM(${i},'b',this.value)">${koOpts((kv[i]||{}).b)}</select></div>`).join('')}<button class="pri" onclick="saveKO()">ব্র্যাকেট সেভ করুন</button></div>`:'';
+  const nolg=P.filter(p=>!p.logo).length;
+  const plBox=P.length&&can('addPlayer')?`<div class="box"><b>প্লেয়ার ও লোগো (${P.length})</b><p class="mu">${nolg?nolg+' জনের আসল লোগো নেই (নামের অক্ষরে ব্যাজ দেখাচ্ছে)। 🔍 আবার খোঁজে, 📷 দিয়ে ছবি দিন।':'সবার লোগো আছে।'}</p>${P.map(p=>`<div class="fx"><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div><button onclick="refind('${p.id}')">🔍</button><label class="btn">📷<input type="file" accept="image/*" hidden onchange="upLogo('${p.id}',this)"></label><button onclick="editP('${p.id}')">✎</button>${S?'':`<button class="bad" onclick="delP('${p.id}')">✕</button>`}</div>`).join('')}<div class="row"><button onclick="saveLib()">💾 সব লোগো লাইব্রেরিতে সেভ</button></div></div>`:'';
+  const inG=S?P.filter(p=>S.grp[p.id]):[],free=S?P.filter(p=>!S.grp[p.id]):[];
+  const repBox=S&&can('replace')?`<div class="box"><b>প্লেয়ার বদল (কেউ চলে গেলে)</b><p class="mu">আগে নিচের "প্লেয়ার যোগ করুন" বক্সে নতুন প্লেয়ার ও ক্লাব যোগ করো। তারপর এখানে বেছে নিলে নতুন প্লেয়ার ওই গ্রুপে পুরনো প্লেয়ারের সব ম্যাচে বসে যাবে, পুরনো প্লেয়ার মুছে যাবে।</p><div class="mu">যে চলে গেছে</div><div class="row"><select id="rpo">${inG.map(p=>`<option value="${p.id}">${esc(p.club)} (${esc(p.name)}) · Group ${S.grp[p.id]}</option>`).join('')}</select></div><div class="mu">নতুন প্লেয়ার</div><div class="row"><select id="rpn">${free.map(p=>`<option value="${p.id}">${esc(p.club)} (${esc(p.name)})</option>`).join('')||'<option value="">— আগে নতুন প্লেয়ার যোগ করুন —</option>'}</select></div><div class="row"><button class="pri" onclick="replaceP(true)">পুরনো রেজাল্ট রেখে বদলান</button><button class="bad" onclick="replaceP(false)">পুরনো রেজাল্ট মুছে বদলান</button></div></div>`:'';
+  const shotBox=S&&can('shots')?`<div class="box"><b>📸 ছবি ডাউনলোড (গ্রুপে শেয়ার করার জন্য)</b><p class="mu">বাটন চাপলে PNG ছবি ফোনে ডাউনলোড হবে। শুধু অ্যাপ্রুভ হওয়া রেজাল্ট থাকবে।</p><div class="row"><button onclick="shotRun(()=>shotTable('A'))">Group A টেবিল</button><button onclick="shotRun(()=>shotTable('B'))">Group B টেবিল</button></div><div class="row"><button onclick="shotRun(()=>shotStand(['A','B']))">Standings (A+B)</button><button onclick="shotRun(shotQual)">✅ Qualified</button><button onclick="shotRun(shotBracket)">Bracket</button></div><div class="row"><select id="shd">${Array.from({length:mx},(_,i)=>`<option value="${i+1}">Day ${i+1}</option>`).join('')}</select><button class="pri" onclick="shotRun(()=>shotDay(+document.getElementById('shd').value))">এই Day-র রেজাল্ট</button></div><div class="row"><button onclick="shotRun(shotAllDays)">সব Day (আলাদা আলাদা ছবি)</button></div><div class="row"><button onclick="shotRun(()=>shotStat('d'))">🛡 Top Defender</button><button onclick="shotRun(()=>shotStat('s'))">⚽ Top Scorer</button><button onclick="shotRun(()=>shotStat('p'))">🏆 Top Player</button></div><div id="shotmsg" class="mu"></div></div>`:'';
+  const extra=dayBox+shotBox+repBox+grpBox+koBox;
+  const lab=role==='a1'?'অ্যাডমিন 1':'অ্যাডমিন '+(mySlot||'');
+  const btns=[can('draw')?'<button class="pri" onclick="doDraw()">🎲 ড্র করুন</button>':'',can('ko')?'<button class="pri" onclick="genKO()">🏆 নকআউট শুরু করুন</button>':'',can('koToggle')?`<button onclick="toggleKO()">${CF.showKO?'👁 Knockout লুকান':'👁 Knockout দেখান'}</button>`:'',role==='a1'?'<button class="bad" onclick="newTour()">♻ নতুন টুর্নামেন্ট</button>':'','<button onclick="au.signOut()">Logout</button>'].filter(Boolean).join(' ');
+  return `<div class="mu" style="margin:6px 0">লগইন: <b>${lab}</b> · ${esc(au.currentUser?au.currentUser.email:'')}</div>`
+   +(can('approve')?`<div class="box"><b>পেন্ডিং রেজাল্ট</b>${pend}</div>`:'')
+   +(can('addPlayer')?`<div class="box"><b>প্লেয়ার যোগ করুন</b><div class="row"><input id="pn" placeholder="প্লেয়ারের নাম"><input id="pc" list="cl" placeholder="ক্লাবের নাম" oninput="clearTimeout(window._lt);window._lt=setTimeout(findLogo,800)"><datalist id="cl">${Object.values(CL).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div class="row"><button onclick="findLogo()">🔍 লোগো খুঁজুন</button></div><div id="lp" class="row">${lpMsg}</div><div class="row"><input id="pf" type="file" accept="image/*"></div><button class="pri" onclick="addP()">যোগ করুন</button></div>`:'')
+   +`<div class="box"><b>${can('draw')?'ড্র':'অ্যাকাউন্ট'}</b>${can('draw')?'<p class="mu">সব প্লেয়ার যোগ হলে ড্র দিন। আবার ড্র দিলে সব রেজাল্ট মুছে যাবে।</p>':''}${btns}</div>`
+   +extra+plBox+vMgr();
+}
+
+function vMgr(){
+  if(role!=='a1')return '';
+  return seasonBox()+[2,3].map(n=>{
+    const ent=Object.entries(SA).find(([e,d])=>d.slot===n),em=ent?ent[0]:'',pm=(ent&&ent[1].perms)||{};
+    if(!em)return `<div class="box"><b>অ্যাডমিন ${n}</b><p class="mu">এখনো সেট করা হয়নি। জিমেইল ও পাসওয়ার্ড দিলে অ্যাকাউন্ট তৈরি হবে।</p><div class="row"><input id="ae${n}" type="email" placeholder="জিমেইল"><input id="ap${n}" type="text" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)"></div><button class="pri" onclick="mkAdmin(${n})">অ্যাডমিন ${n} তৈরি করুন</button></div>`;
+    return `<div class="box"><b>অ্যাডমিন ${n}</b><p class="mu">জিমেইল: <b>${esc(em)}</b></p><div class="row"><button onclick="resetPw('${esc(em)}')">পাসওয়ার্ড রিসেট মেইল</button><button class="bad" onclick="rmAdmin('${esc(em)}')">অনুমতি তুলে নিন</button></div><p class="mu">কোন কাজ করতে পারবে:</p>${PERMS.map(([k,l])=>`<label class="fx" style="gap:10px"><input type="checkbox" ${pm[k]===true?'checked':''} onchange="setPerm('${esc(em)}','${k}',this.checked)"><span style="flex:1">${l}</span></label>`).join('')}</div>`;
+  }).join('');
+}
+async function mkAdmin(n){
+  if(role!=='a1')return;
+  const em=document.getElementById('ae'+n).value.trim().toLowerCase(),pw=document.getElementById('ap'+n).value;
+  if(!em||!em.includes('@'))return alert('সঠিক জিমেইল দিন');
+  if(pw.length<6)return alert('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন');
+  if(SA[em])return alert('এই জিমেইল আগেই অ্যাডমিন হিসেবে আছে');
+  let note='অ্যাকাউন্ট তৈরি হয়েছে।';
+  try{
+    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(CFG,'sec');
+    await sec.auth().createUserWithEmailAndPassword(em,pw);
+    await sec.auth().signOut();
+  }catch(e){
+    if(e.code==='auth/email-already-in-use')note='এই জিমেইলে অ্যাকাউন্ট আগে থেকেই আছে, ওই অ্যাকাউন্টের পুরনো পাসওয়ার্ডই চলবে (দরকারে রিসেট মেইল পাঠাও)।';
+    else return alert('অ্যাকাউন্ট তৈরি হয়নি: '+(e.code||e.message));
+  }
+  await db.doc('subadmins/'+em).set({slot:n,perms:{addPlayer:true,replace:true,ko:true,shots:true,approve:true}});
+  alert(note+' এবার অ্যাডমিন '+n+'-কে জিমেইল ও পাসওয়ার্ড জানিয়ে দাও।');
+}
+function setPerm(em,k,v){if(role!=='a1')return;db.doc('subadmins/'+em).update({['perms.'+k]:v})}
+function rmAdmin(em){if(role!=='a1')return;if(confirm(em+'-এর অ্যাডমিন অনুমতি তুলে নেওয়া হবে। নিশ্চিত?'))db.doc('subadmins/'+em).delete()}
+function resetPw(em){if(role!=='a1')return;au.sendPasswordResetEmail(em).then(()=>alert('পাসওয়ার্ড রিসেট মেইল পাঠানো হয়েছে।')).catch(e=>alert('পাঠানো যায়নি: '+(e.code||e.message)))}
+function draw(){
+  if(tab==='ko'&&!CF.showKO&&!admin)tab='table';
+  const tabs=[['table','Table'],['fix','Matches'],['ko','Knockout'],['st','Stats'],['pv','Previous Top Players'],['pl','Players'],['ad','Admin']].filter(t=>t[0]!=='ko'||CF.showKO||admin).map(t=>t[0]==='ko'&&!CF.showKO?[t[0],'Knockout 🔒']:t);
+  document.getElementById('nav').innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';draw()">${l}</button>`).join('');
+  document.getElementById('sub').textContent=S?`${P.length} players · 2 groups · Live`:'Draw pending';
+  const v={table:vTable,fix:vFix,ko:vKO,st:vStats,pv:vPrev,pl:vPlayers,ad:vAdmin}[tab]();
+  const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&tab==='ad'&&a.id)return;
+  document.getElementById('app').innerHTML=v;
+  const bk=document.getElementById('bkc');if(bk)paintBracket(bk);
+}
+function login(){au.signInWithEmailAndPassword(em.value,pw.value).catch(e=>alert('Login failed: '+e.code))}
+function img(f){return new Promise(r=>{const i=new Image;i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const m=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,96,96);r(c.toDataURL('image/jpeg',.8))};i.src=URL.createObjectURL(f)})}
+let autoLogo='',lpMsg='<span class="mu">ক্লাবের নাম লিখলে লোগো অটো খোঁজা হবে।</span>';
+function setLp(h){lpMsg=h;const e=document.getElementById('lp');if(e)e.innerHTML=h}
+const ALIAS={'psg':'Paris Saint-Germain','man city':'Manchester City','man utd':'Manchester United','man united':'Manchester United','ac milan':'AC Milan','inter':'Inter Milan','atletico':'Atlético Madrid','atletico madrid':'Atlético Madrid','spurs':'Tottenham Hotspur','barca':'FC Barcelona','barcelona':'FC Barcelona','real madrid':'Real Madrid','bayern':'Bayern Munich','dortmund':'Borussia Dortmund','juve':'Juventus','leverkusen':'Bayer Leverkusen','como':'Como 1907','benfica':'S.L. Benfica','porto':'FC Porto','ajax':'AFC Ajax','newcastle':'Newcastle United','west ham':'West Ham United','wolves':'Wolverhampton Wanderers','napoli':'SSC Napoli','roma':'AS Roma','lazio':'SS Lazio','sevilla':'Sevilla FC','villarreal':'Villarreal CF','fortuna sittard':'Fortuna Sittard','bournemouth':'AFC Bournemouth'};
+async function wiki(t){
+  const r=await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=200&gsrsearch='+encodeURIComponent(t));
+  const j=await r.json(),p=Object.values((j.query||{}).pages||{})[0];return p&&p.thumbnail?p.thumbnail.source:'';
+}
+async function sdb(t){
+  const r=await fetch('https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t='+encodeURIComponent(t));
+  const x=((await r.json()).teams||[])[0];return x?(x.strBadge||x.strTeamBadge||''):'';
+}
+async function lookup(q){
+  const c=CL[ckey(q)];if(c&&c.logo)return c.logo;
+  const a=ALIAS[q.trim().toLowerCase()]||q.trim();
+  for(const f of [()=>wiki(a+' football club'),()=>sdb(a),()=>wiki(a+' F.C.'),()=>wiki(a+' soccer team')]){
+    try{const u=await f();if(u)return u}catch(e){}
+  }
+  return '';
+}
+async function findLogo(){
+  const q=pc.value.trim();autoLogo='';
+  if(!q){setLp('');return}
+  setLp('<span class="mu">লোগো খুঁজছি…</span>');
+  autoLogo=await lookup(q);
+  setLp(autoLogo?`<img class="lg" style="width:56px;height:56px" src="${esc(autoLogo)}"> <span class="mu">এই লোগো বসবে। ভুল হলে নিচে ছবি আপলোড করুন।</span>`:'<span class="mu">লোগো পাওয়া যায়নি। ইংরেজিতে পুরো নাম লিখুন বা ছবি আপলোড করুন (না দিলে নামের অক্ষরে ব্যাজ হবে)।</span>');
+}
+function saveClub(name,logo){return db.doc('clubs/'+ckey(name)).set({name,logo})}
+async function refind(id){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
+  const p=pl(id);if(!p)return;const u=await lookup(p.club);
+  if(!u)return alert('লোগো পাওয়া যায়নি। 📷 দিয়ে ছবি দিন।');
+  await db.doc('players/'+id).update({logo:u});saveClub(p.club,u);
+}
+async function upLogo(id,inp){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
+  const f=inp.files[0],p=pl(id);if(!f||!p)return;
+  const u=await img(f);await db.doc('players/'+id).update({logo:u});saveClub(p.club,u);
+}
+async function editP(id){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
+  const p=pl(id);if(!p)return;
+  const n=prompt('প্লেয়ারের নাম',p.name);if(n===null)return;
+  const c=prompt('ক্লাবের নাম',p.club);if(c===null)return;
+  await db.doc('players/'+id).update({name:n.trim()||p.name,club:c.trim()||p.club});
+}
+function delP(id){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');if(confirm('এই প্লেয়ার মুছে যাবে। নিশ্চিত?'))db.doc('players/'+id).delete()}
+async function saveLib(){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
+  const b=db.batch();P.filter(p=>p.logo).forEach(p=>b.set(db.doc('clubs/'+ckey(p.club)),{name:p.club,logo:p.logo}));
+  await b.commit();alert('লোগো লাইব্রেরিতে সেভ হয়েছে। পরের টুর্নামেন্টে ক্লাবের নাম লিখলেই লোগো নিজে বসবে।');
+}
+function toggleKO(){if(!(can('koToggle')))return alert('এই কাজের অনুমতি নেই');db.doc('meta/cfg').set({showKO:!CF.showKO},{merge:true})}
+async function newTour(){
+  if(!(role==='a1'))return alert('এই কাজের অনুমতি নেই');
+  if(!confirm('নতুন টুর্নামেন্ট: ড্র, ফিক্সচার, সব রেজাল্ট ও নকআউট মুছে যাবে। প্লেয়ার ও লোগো থাকবে। নিশ্চিত?'))return;
+  const cur=CF.season||1,rec=seasonRec();
+  if(rec){try{await db.doc('seasons/'+cur).set(rec)}catch(e){if(!confirm('সিজন রেকর্ড সেভ হয়নি (Firestore Rules-এ seasons যোগ করেছ কিনা দেখো)। তবুও নতুন টুর্নামেন্ট শুরু করবেন?'))return}}
+  else if(!confirm('ফাইনাল শেষ হয়নি, তাই Season '+cur+'-এর বিজয়ী রেকর্ড হবে না। তবুও শুরু করবেন?'))return;
+  const b=db.batch();
+  Object.keys(R).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.delete(db.doc('meta/state'));b.delete(db.doc('meta/ko'));
+  b.set(db.doc('meta/cfg'),{showKO:false,season:cur+1},{merge:true});
+  await b.commit();MG={};KM=[];day=1;dayUser=false;tab='ad';draw();
+}
+async function addP(){if(!(can('addPlayer')))return alert('এই কাজের অনুমতি নেই');
+  if(!pn.value||!pc.value)return alert('নাম ও ক্লাব দিন');
+  const logo=pf.files[0]?await img(pf.files[0]):autoLogo;autoLogo='';lpMsg='<span class="mu">ক্লাবের নাম লিখলে লোগো অটো খোঁজা হবে।</span>';
+  const cn=pc.value.trim();await db.collection('players').add({name:pn.value.trim(),club:cn,logo});if(logo)saveClub(cn,logo);
+  tab='ad';draw();
+}
+function openScore(id,h,a){
+  const f={h,a},r=R[id]||{};
+  dbody.innerHTML=`<p><b>${esc(pl(f.h)?.club)}</b> vs <b>${esc(pl(f.a)?.club)}</b></p><div class="row" style="justify-content:center;align-items:center"><input id="hg" type="number" min="0" value="${r.hg??''}"> - <input id="ag" type="number" min="0" value="${r.ag??''}"></div><p class="mu">${direct()?'অ্যাডমিন: সরাসরি সেভ হবে।':'অ্যাডমিন অ্যাপ্রুভ করলে স্কোর কাউন্ট হবে।'}</p><div class="row"><button onclick="dlg.close()">বাতিল</button><button class="pri" onclick="sendScore('${id}')">জমা দিন</button></div>`;
+  dlg.showModal();
+}
+async function sendScore(id){
+  const h=parseInt(hg.value),a=parseInt(ag.value);
+  if(isNaN(h)||isNaN(a)||h<0||a<0||h>20||a>20)return alert('সঠিক স্কোর দিন (০-২০)');
+  try{
+    if(direct()){await db.doc('results/'+id).set({hg:h,ag:a});await db.doc('pending/'+id).delete()}
+    else{await db.doc('pending/'+id).set({hg:h,ag:a,t:Date.now()});alert('স্কোর জমা হয়েছে। অ্যাডমিন অ্যাপ্রুভ করলে দেখা যাবে।')}
+    dlg.close();
+  }catch(e){alert('জমা হয়নি: এই ম্যাচের রেজাল্ট হয়তো আগেই অ্যাপ্রুভ হয়েছে।')}
+}
+async function approve(id){if(!(can('approve')))return alert('এই কাজের অনুমতি নেই');const q=Q[id];await db.doc('results/'+id).set({hg:q.hg,ag:q.ag});await db.doc('pending/'+id).delete()}
+
+function legInfo(id){
+  const f=S&&S.fx.find(x=>x.id===id);if(f)return f;
+  const t=ties().find(x=>x.id===id.split('_')[0]);if(!t)return null;
+  return id.endsWith('_1')?{h:t.a,a:t.b}:{h:t.b,a:t.a};
+}
+function agg(t){const l1=R[t.id+'_1'],l2=R[t.id+'_2'];let ga=0,gb=0;if(l1){ga+=l1.hg;gb+=l1.ag}if(l2){ga+=l2.ag;gb+=l2.hg}return{ga,gb,done:!!(l1&&l2)}}
+function winner(t){if(!t.a||!t.b)return null;const g=agg(t);if(!g.done)return null;return g.ga>g.gb?t.a:g.gb>g.ga?t.b:((K.win||{})[t.id]||null)}
+function ties(){
+  if(!K)return [];
+  const T=K.q.map((p,i)=>({id:'Q'+(i+1),n:'Quarter-final '+(i+1),a:p.a,b:p.b}));
+  T.push({id:'S1',n:'Semi-final 1',a:winner(T[0]),b:winner(T[1])},{id:'S2',n:'Semi-final 2',a:winner(T[2]),b:winner(T[3])});
+  T.push({id:'F',n:'Final',a:winner(T[4]),b:winner(T[5])});
+  return T;
+}
+function vKO(){
+  if(!K)return '<div class="box">গ্রুপ পর্ব শেষ হলে অ্যাডমিন নকআউট শুরু করবে।</div>';
+  const T=ties(),ch=winner(T[6]);
+  return (ch?`<div class="box champ">🏆 চ্যাম্পিয়ন<br><b style="font-size:22px">${logo(pl(ch))} ${esc(pl(ch)?.club)}</b><br><span class="mu">${esc(pl(ch)?.name)}</span></div>`:'')+
+  '<h2>ব্র্যাকেট</h2><canvas id="bkc" class="bkc"></canvas>'+
+  T.map(t=>{
+    const g=agg(t),w=winner(t);
+    const leg=(n,h,a)=>{
+      const id=t.id+'_'+n,r=R[id],q=Q[id];
+      const sc=r?`${r.hg} - ${r.ag}`:q&&admin?`<span class="tag">অপেক্ষায়<br>${q.hg}-${q.ag}</span>`:'vs';
+      const btn=r?(can('editScore')?`<button onclick="openScore('${id}','${h}','${a}')">✎</button>`:''):`<button onclick="openScore('${id}','${h}','${a}')">স্কোর</button>`;
+      return `<div class="mu">Leg ${n} · ${esc(pl(h)?.club)}-এর রুমে</div><div class="fx"><div class="t">${logo(pl(h))}<span>${esc(pl(h)?.club)}</span></div><div class="s">${sc}</div><div class="t"><span>${esc(pl(a)?.club)}</span>${logo(pl(a))}</div>${btn}</div>`;
+    };
+    let body;
+    if(!t.a||!t.b)body='<div class="box mu">আগের রাউন্ডের বিজয়ীর অপেক্ষায়…</div>';
+    else body=leg(1,t.a,t.b)+leg(2,t.b,t.a)+`<div class="mu">Aggregate: ${esc(pl(t.a)?.club)} ${g.ga} - ${g.gb} ${esc(pl(t.b)?.club)}${w?` · বিজয়ী: <b>${esc(pl(w)?.club)}</b>`:''}</div>`+
+      (can('ko')&&g.done&&g.ga===g.gb?`<div class="row"><button onclick="setWin('${t.id}','${t.a}')">${esc(pl(t.a)?.club)} জিতেছে</button><button onclick="setWin('${t.id}','${t.b}')">${esc(pl(t.b)?.club)} জিতেছে</button></div>`:'');
+    return `<h2>${t.n}</h2>${body}`;
+  }).join('');
+}
+function bt(t){
+  const g=agg(t),w=winner(t),any=R[t.id+'_1']||R[t.id+'_2'];
+  const row=(id,n)=>`<div class="${w&&w===id?'w':''}"><span>${esc(pl(id)?.club||'TBD')}</span><span>${any&&id?n:''}</span></div>`;
+  return `<div class="bt">${row(t.a,g.ga)}${row(t.b,g.gb)}</div>`;
+}
+function bracket(T){
+  return `<div class="br"><div class="bcol"><div class="mu">Quarter</div>${T.slice(0,4).map(bt).join('')}</div><div class="bcol"><div class="mu">Semi</div>${T.slice(4,6).map(bt).join('')}</div><div class="bcol"><div class="mu">Final</div>${bt(T[6])}</div></div>`;
+}
+function setWin(id,pid){if(!(can('ko')))return alert('এই কাজের অনুমতি নেই');db.doc('meta/ko').update({['win.'+id]:pid})}
+async function genKO(){if(!(can('ko')))return alert('এই কাজের অনুমতি নেই');
+  if(!S)return alert('আগে ড্র করুন');
+  const A=table('A').slice(0,4).map(t=>t.p.id),B=table('B').slice(0,4).map(t=>t.p.id).sort(()=>Math.random()-.5);
+  if(A.length<4||B.length<4)return alert('প্রতি গ্রুপে কমপক্ষে ৪ জন লাগবে');
+  if(!confirm('প্রতি গ্রুপের টপ ৪ জন নিয়ে নকআউট শুরু হবে।'+(K?' আগের নকআউট রেজাল্ট মুছে যাবে।':'')+' নিশ্চিত?'))return;
+  const b=db.batch(),ko=/^[QSF]/;
+  Object.keys(R).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.set(db.doc('meta/ko'),{q:A.map((a,i)=>({a,b:B[i]})),win:{}});
+  await b.commit();tab='ko';draw();
+}
+function rr(ids,g){
+  const a=ids.slice();if(a.length%2)a.push(null);const n=a.length,fx=[];
+  for(let r=0;r<n-1;r++){
+    for(let i=0;i<n/2;i++){const h=a[i],b=a[n-1-i];if(h&&b)fx.push({id:`${g}${r+1}_${i}`,g,d:r+1,h:r%2?b:h,a:r%2?h:b})}
+    a.splice(1,0,a.pop());
+  }
+  return fx;
+}
+async function doDraw(){if(!(can('draw')))return alert('এই কাজের অনুমতি নেই');
+  if(P.length<4)return alert('কমপক্ষে ৪ জন প্লেয়ার লাগবে');
+  if(S&&!confirm('আবার ড্র দিলে সব রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  const ids=P.map(p=>p.id).sort(()=>Math.random()-.5),half=Math.ceil(ids.length/2);
+  await applyGroups(ids.slice(0,half),ids.slice(half));
+}
+async function applyGroups(A,B){
+  const grpMap={};
+  A.forEach(i=>grpMap[i]='A');B.forEach(i=>grpMap[i]='B');
+  const b=db.batch();
+  Object.keys(R).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.delete(db.doc('meta/ko'));
+  b.set(db.doc('meta/state'),{grp:grpMap,open:1,fx:[...rr(A,'A'),...rr(B,'B')]});
+  await b.commit();KM=[];tab='table';draw();
+}
+function editFx(id){if(!(can('fixtureEdit')))return alert('এই কাজের অনুমতি নেই');
+  const f=S.fx.find(x=>x.id===id),mx=Math.max(...S.fx.map(x=>x.d));
+  const op=sel=>P.filter(p=>S.grp[p.id]===f.g).map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.club)} (${esc(p.name)})</option>`).join('');
+  dbody.innerHTML=`<p><b>ম্যাচ এডিট · Group ${f.g}</b></p><div class="mu">Home (Leg-এর প্রথম টিম) ও Away</div><div class="row"><select id="eh">${op(f.h)}</select><select id="ea">${op(f.a)}</select></div><div class="mu">ম্যাচ ডে</div><div class="row"><select id="ed">${Array.from({length:mx},(_,i)=>`<option value="${i+1}" ${f.d===i+1?'selected':''}>Day ${i+1}</option>`).join('')}</select></div><p class="mu">টিম বদলালে এই ম্যাচের আগের রেজাল্ট মুছে যাবে।</p><div class="row"><button onclick="dlg.close()">বাতিল</button><button class="pri" onclick="saveFx('${id}')">সেভ</button></div>`;
+  dlg.showModal();
+}
+async function saveFx(id){if(!(can('fixtureEdit')))return alert('এই কাজের অনুমতি নেই');
+  const h=eh.value,a=ea.value,d=+ed.value;
+  if(h===a)return alert('দুটো আলাদা টিম বেছে নিন');
+  const f=S.fx.find(x=>x.id===id),changed=h!==f.h||a!==f.a;
+  if(changed&&(R[id]||Q[id])&&!confirm('এই ম্যাচের রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  if(S.fx.some(x=>x.id!==id&&x.g===f.g&&((x.h===h&&x.a===a)||(x.h===a&&x.a===h)))&&!confirm('এই দুই টিমের ম্যাচ আগে থেকেই আছে। তবুও সেভ করবেন?'))return;
+  if(S.fx.some(x=>x.id!==id&&x.d===d&&[x.h,x.a].some(p=>p===h||p===a))&&!confirm('ওই দিনে এই দুই টিমের কারো আরেকটা ম্যাচ আছে। তবুও সেভ করবেন?'))return;
+  await db.doc('meta/state').update({fx:S.fx.map(x=>x.id===id?{...x,h,a,d}:x)});
+  if(changed){await db.doc('results/'+id).delete();await db.doc('pending/'+id).delete()}
+  dlg.close();
+}
+async function replaceP(keep){if(!(can('replace')))return alert('এই কাজের অনুমতি নেই');
+  const o=document.getElementById('rpo').value,n=document.getElementById('rpn').value;
+  if(!o||!n)return alert('পুরনো ও নতুন প্লেয়ার বেছে নিন');
+  const po=pl(o),np=pl(n);if(!po||!np)return;
+  if(!confirm(np.club+' ('+np.name+') বসবে '+po.club+' ('+po.name+')-এর জায়গায়।'+(keep?' পুরনো খেলা ম্যাচের রেজাল্ট নতুন প্লেয়ারের নামে থাকবে।':' পুরনো প্লেয়ারের সব ম্যাচের রেজাল্ট মুছে যাবে।')+' পুরনো প্লেয়ার মুছে যাবে। নিশ্চিত?'))return;
+  const grp={...S.grp};grp[n]=grp[o];delete grp[o];
+  const fx=S.fx.map(f=>(f.h===o||f.a===o)?{...f,h:f.h===o?n:f.h,a:f.a===o?n:f.a}:f);
+  const b=db.batch();
+  if(!keep)S.fx.filter(f=>f.h===o||f.a===o).forEach(f=>{b.delete(db.doc('results/'+f.id));b.delete(db.doc('pending/'+f.id))});
+  b.update(db.doc('meta/state'),{grp,fx});
+  if(K&&K.q.some(x=>x.a===o||x.b===o))b.update(db.doc('meta/ko'),{q:K.q.map(x=>({a:x.a===o?n:x.a,b:x.b===o?n:x.b}))});
+  b.delete(db.doc('players/'+o));
+  await b.commit();
+  alert('প্লেয়ার বদল হয়েছে।');
+}
+function allMatches(){
+  const m=[];
+  if(S)S.fx.forEach(f=>{const r=R[f.id];if(r)m.push({h:f.h,a:f.a,hg:r.hg,ag:r.ag})});
+  ties().forEach(t=>{
+    if(!t.a||!t.b)return;
+    const l1=R[t.id+'_1'],l2=R[t.id+'_2'];
+    if(l1)m.push({h:t.a,a:t.b,hg:l1.hg,ag:l1.ag});
+    if(l2)m.push({h:t.b,a:t.a,hg:l2.hg,ag:l2.ag});
+  });
+  return m;
+}
+function stats(){
+  const T={},g=id=>T[id]||(T[id]={id,pl:0,w:0,l:0,gf:0,ga:0});
+  allMatches().forEach(x=>{
+    const h=g(x.h),a=g(x.a);h.pl++;a.pl++;h.gf+=x.hg;h.ga+=x.ag;a.gf+=x.ag;a.ga+=x.hg;
+    if(x.hg>x.ag){h.w++;a.l++}else if(x.hg<x.ag){a.w++;h.l++}
+  });
+  return Object.values(T).filter(t=>pl(t.id));
+}
+function vStats(){
+  if(!S)return '<div class="box">ড্র ও ম্যাচ শুরু হলে এখানে র‍্যাঙ্কিং দেখা যাবে।</div>';
+  const tabs=[['d','🛡 Top Defender'],['s','⚽ Top Scorer'],['p','🏆 Top Player']];
+  let a=stats(),title,row;
+  if(sk==='d'){a.sort((x,y)=>x.ga/x.pl-y.ga/y.pl||y.pl-x.pl||x.ga-y.ga);title='সবচেয়ে কম গোল খায় (প্রতি ম্যাচে গড়)';row=t=>[(t.ga/t.pl).toFixed(2),t.pl+' ম্যাচ · '+t.ga+' গোল খেয়েছে']}
+  else if(sk==='s'){a.sort((x,y)=>y.gf/y.pl-x.gf/x.pl||y.pl-x.pl||y.gf-x.gf);title='সবচেয়ে বেশি গোল করে (প্রতি ম্যাচে গড়)';row=t=>[(t.gf/t.pl).toFixed(2),t.pl+' ম্যাচ · '+t.gf+' গোল']}
+  else{a=topPlayers();title='সেরা প্লেয়ার (গোল করা + কম গোল খাওয়া + জয়/ড্র, গড়ে)';row=t=>[t.rt.toFixed(1),t.pl+' ম্যাচ · '+t.w+' জয় '+t.d+' ড্র '+t.l+' হার · গড় গোল '+(t.gf/t.pl).toFixed(1)+'-'+(t.ga/t.pl).toFixed(1)]}
+  a=a.slice(0,8);
+  return `<div class="row">${tabs.map(([k,l])=>`<button class="${sk===k?'on':''}" onclick="sk='${k}';draw()">${l}</button>`).join('')}</div><h2>${title}</h2>`+
+   (a.length?a.map((t,i)=>{const p=pl(t.id),[v,sub]=row(t);return `<div class="fx"><div class="s" style="min-width:26px">${i+1}</div><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div><div style="text-align:right"><b style="font-size:18px;color:var(--gold)">${v}</b><div class="mu" style="font-size:11px">${sub}</div></div></div>`}).join(''):'<div class="box">এখনো কোনো অ্যাপ্রুভ করা রেজাল্ট নেই।</div>')+'<p class="mu">শুধু অ্যাপ্রুভ হওয়া ম্যাচের হিসাবে। টপ ৮ জন।'+(sk==='p'?'<br>রেটিং (০–১০০) = প্রতি ম্যাচে গোল করা + কম গোল খাওয়া + জয়/ড্র পয়েন্ট, তিনটার গড়ে। জয় ১, ড্র '+fmt(TP().d)+', কোয়ার্টার ফাইনাল বোনাস '+fmt(TP().q)+', ফাইনাল বোনাস '+fmt(TP().f)+'। নকআউটের হার গোনা হয় না।':'')+'</p>';
+}
+const FF='system-ui,"Noto Sans Bengali",sans-serif',imgCache={};
+const iniTxt=p=>{const w=String(p.club||'?').trim().split(/\s+/);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()};
+function loadImg(u){
+  if(!u)return Promise.resolve(null);
+  if(imgCache[u]!==undefined)return Promise.resolve(imgCache[u]);
+  return new Promise(r=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{imgCache[u]=i;r(i)};i.onerror=()=>{imgCache[u]=null;r(null)};i.src=u});
+}
+async function logosFor(ids){const o={};await Promise.all(ids.map(async id=>{const p=pl(id);o[id]=p?await loadImg(p.logo):null}));return o}
+const CY='#35e0ff',HF="'Barlow Condensed',system-ui,sans-serif";
+function bg(x,w,h){
+  const g=x.createLinearGradient(0,0,w*.4,h);g.addColorStop(0,'#0a2fd8');g.addColorStop(.35,'#06127a');g.addColorStop(1,'#030a45');
+  x.fillStyle=g;x.fillRect(0,0,w,h);x.lineWidth=3;
+  [[CY,0],['#ff4fd8',14],['#ffd84a',28]].forEach(([col,o])=>{x.strokeStyle=col;x.globalAlpha=.55;
+    x.beginPath();x.moveTo(-20,260+o);x.bezierCurveTo(200,120+o,330,40+o,560,-20+o);x.stroke();
+    x.beginPath();x.moveTo(w+20,h-300-o);x.bezierCurveTo(w-220,h-180-o,w-380,h-60-o,w-560,h+20-o);x.stroke()});
+  x.globalAlpha=1;
+}
+function newCanvas(h){const c=document.createElement('canvas');c.width=1080;c.height=h;const x=c.getContext('2d');bg(x,1080,h);return [c,x]}
+function loadFonts(){return document.fonts?Promise.all([document.fonts.load('italic 800 40px "Barlow Condensed"'),document.fonts.load('800 30px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve()}
+function fitTxt(x,t,w){t=String(t);if(x.measureText(t).width<=w)return t;while(t.length>1&&x.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'}
+function rr2(x,px,py,w,h,r,fill){x.beginPath();if(x.roundRect)x.roundRect(px,py,w,h,r);else x.rect(px,py,w,h);x.fillStyle=fill;x.fill()}
+function head(x,title,sub){
+  x.textBaseline='alphabetic';x.textAlign='left';
+  x.fillStyle=CY;x.font='italic 800 68px '+HF;x.fillText(title.toUpperCase(),44,112);
+  x.fillStyle='#fff';x.font='600 24px '+FF;x.fillText('eFootball Dynasty · Solo Tournament'+(sub?' · '+sub:''),46,152);
+}
+function foot(x,h){x.textBaseline='alphabetic';x.textAlign='center';x.fillStyle='#9db3ff';x.font='500 20px '+FF;x.fillText('Updated '+new Date().toLocaleDateString('en-GB'),540,h-24)}
+function pill(x,px,py,w,h,cap){
+  rr2(x,px,py,w,h,h/2,'#070b24');
+  x.beginPath();if(x.roundRect)x.roundRect(px,py,h*.9,h,[h/2,0,0,h/2]);else x.rect(px,py,h*.9,h);x.fillStyle=cap;x.fill();
+}
+function trophy(x,cx,cy,s){
+  const g=x.createLinearGradient(cx-90*s,0,cx+90*s,0);g.addColorStop(0,'#8fa6d8');g.addColorStop(.5,'#fff');g.addColorStop(1,'#8fa6d8');
+  x.fillStyle=g;x.strokeStyle='#cfe0ff';x.lineWidth=10*s;
+  x.beginPath();x.moveTo(cx-90*s,cy);x.bezierCurveTo(cx-90*s,cy+170*s,cx-45*s,cy+230*s,cx-18*s,cy+250*s);x.lineTo(cx+18*s,cy+250*s);x.bezierCurveTo(cx+45*s,cy+230*s,cx+90*s,cy+170*s,cx+90*s,cy);x.closePath();x.fill();
+  [-1,1].forEach(m=>{x.beginPath();x.moveTo(cx+m*90*s,cy+20*s);x.bezierCurveTo(cx+m*190*s,cy+10*s,cx+m*170*s,cy+170*s,cx+m*60*s,cy+190*s);x.stroke()});
+  x.fillRect(cx-14*s,cy+250*s,28*s,60*s);
+  x.beginPath();x.moveTo(cx-70*s,cy+372*s);x.lineTo(cx-45*s,cy+310*s);x.lineTo(cx+45*s,cy+310*s);x.lineTo(cx+70*s,cy+372*s);x.closePath();x.fill();
+}
+function drawLogo(x,p,im,cx,cy,r){
+  x.save();x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.closePath();x.clip();
+  if(im){
+    x.fillStyle='#fff';x.fillRect(cx-r,cy-r,2*r,2*r);
+    const k=Math.min(2*r/im.width,2*r/im.height)*0.86,w=im.width*k,h=im.height*k;
+    x.drawImage(im,cx-w/2,cy-h/2,w,h);
+  }else{
+    const g=x.createLinearGradient(cx-r,cy-r,cx+r,cy+r);g.addColorStop(0,'#38bdf8');g.addColorStop(1,'#a78bfa');
+    x.fillStyle=g;x.fillRect(cx-r,cy-r,2*r,2*r);
+    x.fillStyle='#04121f';x.font='800 '+Math.round(r*.8)+'px '+FF;x.textAlign='center';x.textBaseline='middle';x.fillText(p?iniTxt(p):'?',cx,cy+1);
+  }
+  x.restore();
+}
+async function saveImg(c,name){
+  const b=await new Promise(r=>c.toBlob(r,'image/png'));
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+function setMsg(t){const e=document.getElementById('shotmsg');if(e)e.textContent=t}
+async function shotRun(f){
+  if(!can('shots')||!S)return;
+  try{setMsg('ছবি তৈরি হচ্ছে…');await loadFonts();await f();setMsg('✅ ডাউনলোড হয়েছে (ফোনের Downloads ফোল্ডারে)')}
+  catch(e){setMsg('ছবি তৈরি হয়নি: '+e.message)}
+}
+const shotTable=g=>shotStand([g]);
+async function shotStand(gs){
+  const rows=gs.map(g=>table(g)),L=await logosFor(rows.flat().map(t=>t.p.id));
+  const two=gs.length>1,RH=88,top=two?250:210,n=Math.max(...rows.map(r=>r.length)),h=top+n*RH+80,[c,x]=newCanvas(h);
+  head(x,two?'Standings':'Group '+gs[0]+' Standings','');
+  if(!two){x.textBaseline='middle';x.textAlign='center';x.fillStyle='#9db3ff';x.font='600 20px '+FF;['P','W','D','L','GD'].forEach((l,k)=>x.fillText(l,590+k*62,top-22))}
+  gs.forEach((g,gi)=>{
+    const x0=two?30+gi*525:40,w=two?495:1000;
+    if(two){x.textBaseline='middle';x.textAlign='left';x.fillStyle=CY;x.font='italic 800 40px '+HF;x.fillText('GROUP '+g,x0+10,top-34)}
+    rows[gi].forEach((t,i)=>{
+      const y=top+i*RH,p=t.p,m=y+38;
+      pill(x,x0,y,w,76,i<4?CY:'#ff3b6b');
+      x.textBaseline='middle';x.textAlign='center';x.fillStyle='#04124a';x.font='italic 800 36px '+HF;x.fillText(String(i+1),x0+34,m);
+      drawLogo(x,p,L[p.id],x0+96,m,30);
+      x.textAlign='left';x.fillStyle='#fff';x.font='800 '+(two?26:32)+'px '+HF;x.fillText(fitTxt(x,p.club.toUpperCase(),two?210:380),x0+142,m-12);
+      x.fillStyle='#9db3ff';x.font='500 18px '+FF;x.fillText(fitTxt(x,p.name,two?210:380),x0+142,m+16);
+      if(!two){x.textAlign='center';x.fillStyle='#cfdcff';x.font='600 26px '+FF;[t.pl,t.w,t.d,t.l,t.gf-t.ga].forEach((v,k)=>x.fillText(String(v),590+k*62,m))}
+      rr2(x,x0+w-(two?96:130),y+12,two?80:110,52,26,'#fff');
+      x.textAlign='center';x.fillStyle='#04124a';x.font='italic 800 34px '+HF;x.fillText(String(t.pt),x0+w-(two?56:75),m+1);
+    });
+  });
+  foot(x,h);await saveImg(c,(two?'Standings':'Group-'+gs[0]+'-standings')+'.png');
+}
+async function shotDay(d){
+  const gs=['A','B'].map(g=>({g,fx:S.fx.filter(f=>f.g===g&&f.d===d)}));
+  const L=await logosFor(gs.flatMap(o=>o.fx.flatMap(f=>[f.h,f.a])));
+  const RH=84,SH=60,top=190,n=gs.reduce((a,o)=>a+SH+o.fx.length*RH,0),h=top+n+90,[c,x]=newCanvas(h);
+  head(x,'Day '+d+' Results','');
+  rr2(x,30,top-10,1020,n+20,22,'rgba(4,12,110,.88)');
+  let y=top;
+  gs.forEach(o=>{
+    x.textBaseline='middle';x.textAlign='left';x.fillStyle=CY;x.font='italic 800 34px '+HF;x.fillText('GROUP '+o.g,60,y+28);y+=SH;
+    o.fx.forEach(f=>{
+      const r=R[f.id],H=pl(f.h),A=pl(f.a);if(!H||!A)return;const m=y+RH/2;
+      x.fillStyle='rgba(120,160,255,.2)';x.fillRect(70,y+RH-1,940,1);
+      drawLogo(x,H,L[f.h],450,m,28);drawLogo(x,A,L[f.a],630,m,28);
+      x.textBaseline='middle';x.textAlign='right';x.fillStyle='#fff';x.font='800 28px '+HF;x.fillText(fitTxt(x,H.club.toUpperCase(),330),410,m-10);
+      x.fillStyle='#9db3ff';x.font='500 18px '+FF;x.fillText(fitTxt(x,H.name,330),410,m+18);
+      x.textAlign='left';x.fillStyle='#fff';x.font='800 28px '+HF;x.fillText(fitTxt(x,A.club.toUpperCase(),330),676,m-10);
+      x.fillStyle='#9db3ff';x.font='500 18px '+FF;x.fillText(fitTxt(x,A.name,330),676,m+18);
+      x.textAlign='center';x.fillStyle=r?CY:'#9db3ff';x.font='italic 800 '+(r?48:30)+'px '+HF;x.fillText(r?r.hg+'-'+r.ag:'vs',540,m);
+      y+=RH;
+    });
+  });
+  foot(x,h);await saveImg(c,'Day-'+d+'-results.png');
+}
+async function shotAllDays(){
+  const mx=Math.max(...S.fx.map(f=>f.d));
+  for(let d=1;d<=mx;d++){setMsg('Day '+d+' ছবি তৈরি হচ্ছে…');await shotDay(d);await new Promise(r=>setTimeout(r,700))}
+}
+function rankStats(k){
+  let a=stats();let title,sub,row;
+  if(k==='d'){a.sort((x,y)=>x.ga/x.pl-y.ga/y.pl||y.pl-x.pl||x.ga-y.ga);title='Top Defender';sub='Fewest goals conceded per match';row=t=>[(t.ga/t.pl).toFixed(2),t.pl+' matches · '+t.ga+' conceded']}
+  else if(k==='s'){a.sort((x,y)=>y.gf/y.pl-x.gf/x.pl||y.pl-x.pl||y.gf-x.gf);title='Top Scorer';sub='Most goals scored per match';row=t=>[(t.gf/t.pl).toFixed(2),t.pl+' matches · '+t.gf+' goals']}
+  else{a=topPlayers();title='Top Player';sub='Rating: attack + defence + wins/draws (per-match average)';row=t=>[t.rt.toFixed(1),t.pl+' P · '+t.w+'W '+t.d+'D '+t.l+'L · avg '+(t.gf/t.pl).toFixed(1)+'-'+(t.ga/t.pl).toFixed(1)]}
+  return{title,sub,list:a.slice(0,8).map(t=>{const[v,s]=row(t);return{t,v,s}})};
+}
+async function shotStat(k){
+  const r=rankStats(k);if(!r.list.length)throw new Error('এখনো কোনো অ্যাপ্রুভ করা রেজাল্ট নেই');
+  const L=await logosFor(r.list.map(o=>o.t.id)),RH=96,top=200,h=top+r.list.length*RH+80,[c,x]=newCanvas(h);
+  head(x,r.title,r.sub);
+  r.list.forEach((o,i)=>{
+    const y=top+i*RH,p=pl(o.t.id);
+    pill(x,40,y,1000,80,i<3?['#ffd166','#d5def5','#e0a46a'][i]:CY);
+    x.textBaseline='middle';x.textAlign='center';x.fillStyle='#04124a';x.font='italic 800 40px '+HF;x.fillText(String(i+1),76,y+41);
+    drawLogo(x,p,L[o.t.id],170,y+40,32);
+    x.textAlign='left';x.fillStyle='#fff';x.font='800 32px '+HF;x.fillText(fitTxt(x,p.club.toUpperCase(),600),224,y+28);
+    x.fillStyle='#9db3ff';x.font='500 20px '+FF;x.fillText(fitTxt(x,p.name+' · '+o.s,600),224,y+58);
+    rr2(x,880,y+12,140,56,28,'#fff');x.textAlign='center';x.fillStyle='#04124a';x.font='italic 800 38px '+HF;x.fillText(o.v,950,y+41);
+  });
+  foot(x,h);await saveImg(c,'Top-'+r.title.split(' ')[1]+'.png');
+}
+async function shotQual(){
+  const ids=K?K.q.flatMap(q=>[q.a,q.b]):['A','B'].flatMap(g=>table(g).slice(0,4).map(t=>t.p.id));
+  const L=await logosFor(ids),h=1330,[c,x]=newCanvas(h);
+  head(x,'Qualified','Knockout Stage');
+  ids.forEach((id,i)=>{
+    const px=40+(i%2)*270,py=200+Math.floor(i/2)*270,p=pl(id),g=x.createLinearGradient(px,py,px,py+250);
+    g.addColorStop(0,'#2447ff');g.addColorStop(1,'#0a17a0');rr2(x,px,py,250,250,10,g);drawLogo(x,p,L[id],px+125,py+105,70);
+    rr2(x,px,py+200,250,50,0,'rgba(3,8,70,.9)');x.textBaseline='middle';x.textAlign='center';x.fillStyle='#fff';x.font='800 24px '+HF;x.fillText(p?fitTxt(x,p.club.toUpperCase(),230):'',px+125,py+226);
+  });
+  trophy(x,800,330,1.05);
+  x.textAlign='center';x.fillStyle=CY;x.font='italic 800 54px '+HF;x.fillText('ROAD TO',800,900);x.fillText('THE FINAL',800,962);
+  foot(x,h);await saveImg(c,'Qualified.png');
+}
+async function drawBr(x){
+  const T=ties(),ids=[];K.q.forEach(q=>ids.push(q.a,q.b));T.forEach(t=>{const w=winner(t);if(w)ids.push(w)});
+  const L=await logosFor(ids);
+  for(let i=0;i<4;i++){
+    const t=T[i],left=i<2,px=left?30:880,base=i%2?570:210,w=winner(t),g=agg(t),any=R[t.id+'_1']||R[t.id+'_2'];
+    [[t.a,g.ga],[t.b,g.gb]].forEach(([id,n],k)=>{
+      const py=base+k*140,p=pl(id),gr=x.createLinearGradient(px,py,px,py+130);
+      x.globalAlpha=w&&w!==id?.45:1;gr.addColorStop(0,'#1e3bff');gr.addColorStop(1,'#0c1aa8');
+      rr2(x,px,py,170,130,12,gr);if(w&&w===id){x.strokeStyle=CY;x.lineWidth=4;x.stroke()}
+      drawLogo(x,p,L[id],px+85,py+52,36);
+      x.textBaseline='middle';x.textAlign='center';x.fillStyle='#fff';x.font='700 18px '+FF;x.fillText(p?fitTxt(x,p.club,150):'TBD',px+85,py+108);
+      if(any){const bx=px+(left?150:20);x.beginPath();x.arc(bx,py+20,16,0,7);x.fillStyle=CY;x.fill();x.fillStyle='#04124a';x.font='800 20px '+FF;x.fillText(String(n),bx,py+21)}
+      x.globalAlpha=1;
+    });
+  }
+  x.strokeStyle='rgba(255,255,255,.75)';x.lineWidth=3;
+  const ln=pts=>{x.beginPath();pts.forEach(([a,b],j)=>j?x.lineTo(a,b):x.moveTo(a,b));x.stroke()};
+  [0,1].forEach(s=>{const X=v=>s?1080-v:v;
+    [[275,415,345],[635,775,705]].forEach(([a,b,c])=>{ln([[X(200),a],[X(250),a],[X(250),c],[X(256),c]]);ln([[X(200),b],[X(250),b],[X(250),c]])});
+    ln([[X(344),345],[X(392),345],[X(392),525],[X(396),525]]);ln([[X(344),705],[X(392),705],[X(392),525]]);
+  });
+  const circ=(cx,cy,r,id)=>{x.beginPath();x.arc(cx,cy,r,0,7);x.fillStyle='#fff';x.fill();if(id)drawLogo(x,pl(id),L[id],cx,cy,r-4)};
+  circ(300,345,44,winner(T[0]));circ(300,705,44,winner(T[1]));circ(780,345,44,winner(T[2]));circ(780,705,44,winner(T[3]));
+  circ(440,525,44,winner(T[4]));circ(640,525,44,winner(T[5]));circ(540,200,44,winner(T[6]));
+  trophy(x,540,262,.55);
+  x.textBaseline='middle';x.textAlign='center';x.fillStyle=CY;x.font='italic 800 44px '+HF;x.fillText('ROAD TO THE FINAL',540,910);
+}
+async function paintBracket(c){
+  if(!K||!c)return;await loadFonts();c.width=1080;c.height=1000;const x=c.getContext('2d');bg(x,1080,1000);head(x,'Bracket','');await drawBr(x);
+}
+async function shotBracket(){
+  if(!K)throw new Error('নকআউট এখনো শুরু হয়নি');
+  const[c,x]=newCanvas(1000);head(x,'Bracket','');await drawBr(x);foot(x,1000);await saveImg(c,'Bracket.png');
+}
+const fmt=v=>String(+v.toFixed(2));
+const TP=()=>({d:CF.tpDraw??.5,q:CF.tpQf??.25,s:CF.tpSf??0,f:CF.tpFin??.5});
+const TW=()=>({a:CF.wAtk??1,d:CF.wDef??1,r:CF.wRes??1});
+function topPlayers(){
+  const c=TP(),T={},g=id=>T[id]||(T[id]={id,pl:0,w:0,d:0,l:0,pts:0,gf:0,ga:0});
+  S.fx.forEach(f=>{
+    const r=R[f.id];if(!r)return;const h=g(f.h),a=g(f.a);
+    h.pl++;a.pl++;h.gf+=r.hg;h.ga+=r.ag;a.gf+=r.ag;a.ga+=r.hg;
+    if(r.hg>r.ag){h.w++;h.pts++;a.l++}else if(r.hg<r.ag){a.w++;a.pts++;h.l++}else{h.d++;a.d++;h.pts+=c.d;a.pts+=c.d}
+  });
+  ties().forEach(t=>{
+    const w=winner(t);if(!w)return;
+    const lo=w===t.a?t.b:t.a,bn=t.id[0]==='Q'?c.q:t.id[0]==='F'?c.f:c.s,W=g(w),Lz=g(lo);
+    W.pl++;Lz.pl++;W.w++;W.pts+=1+bn;Lz.pts+=bn;
+  });
+  const a=Object.values(T).filter(t=>pl(t.id)&&t.pl>0),W=TW();
+  const mm=f=>{const v=a.map(f);return[Math.min(...v),Math.max(...v)]},nz=(v,lo,hi)=>hi>lo?(v-lo)/(hi-lo):.5;
+  const [al,ah]=mm(t=>t.gf/t.pl),[dl,dh]=mm(t=>t.ga/t.pl),[rl,rh]=mm(t=>t.pts/t.pl);
+  a.forEach(t=>{
+    t.atk=nz(t.gf/t.pl,al,ah)*100;t.def=(1-nz(t.ga/t.pl,dl,dh))*100;t.res=nz(t.pts/t.pl,rl,rh)*100;
+    t.rt=(W.a*t.atk+W.d*t.def+W.r*t.res)/((W.a+W.d+W.r)||1);
+  });
+  return a.sort((x,y)=>y.rt-x.rt||y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga));
+}
+let SEAS={};
+db.collection('seasons').onSnapshot(sn=>{SEAS={};sn.forEach(d=>SEAS[d.id]=d.data());draw()},()=>{});
+const snap=p=>p?{name:p.name,club:p.club,logo:p.logo||''}:{name:'?',club:'?',logo:''};
+function seasonRec(){
+  if(!K)return null;const F=ties()[6],ch=winner(F);if(!ch)return null;
+  const ru=ch===F.a?F.b:F.a;return{season:CF.season||1,champ:snap(pl(ch)),runner:snap(pl(ru)),t:Date.now()};
+}
+function vPrev(){
+  const cur=CF.season||1,items=Object.values(SEAS),live=SEAS[cur]?null:seasonRec();
+  if(live){live.live=true;items.push(live)}
+  items.sort((a,b)=>b.season-a.season);
+  if(!items.length)return `<div class="box">এখনো কোনো সিজন শেষ হয়নি। বর্তমান টুর্নামেন্ট: <b>Season ${cur}</b>। ফাইনাল শেষ হলে বিজয়ী ও রানার্স আপ এখানে দেখা যাবে।</div>`;
+  const row=(lab,p)=>`<div class="fx"><div class="s" style="min-width:96px;font-size:12px;text-align:left">${lab}</div><div class="t">${logo(p)}<span>${esc(p.club)}<br><span class="mu">${esc(p.name)}</span></span></div></div>`;
+  return items.map(it=>`<h2>Season ${it.season}${it.live?' <span class="mu">(সদ্য শেষ)</span>':''}</h2>`+row('🏆 Champion',it.champ)+row('🥈 Runner-up',it.runner)).join('');
+}
+function seasonBox(){
+  const cur=CF.season||1,ok=!!seasonRec(),tc=TP();
+  const tpBox=`<div class="box"><b>Top Player পয়েন্ট</b><p class="mu">গ্রুপে জয় ১ পয়েন্ট। বাকিগুলো এখান থেকে বদলানো যায়।</p><div class="row"><label class="mu">ড্র<input id="tpd" type="number" step="0.05" style="width:100%" value="${tc.d}"></label><label class="mu">Quarter বোনাস<input id="tpq" type="number" step="0.05" style="width:100%" value="${tc.q}"></label></div><div class="row"><label class="mu">Semi বোনাস<input id="tps" type="number" step="0.05" style="width:100%" value="${tc.s}"></label><label class="mu">Final বোনাস<input id="tpf" type="number" step="0.05" style="width:100%" value="${tc.f}"></label></div><p class="mu">রেটিংয়ে কোনটার ওজন কত (সবগুলো ১ মানে সমান)</p><div class="row"><label class="mu">গোল করা<input id="wa" type="number" step="0.1" style="width:100%" value="${TW().a}"></label><label class="mu">ডিফেন্স<input id="wd" type="number" step="0.1" style="width:100%" value="${TW().d}"></label><label class="mu">জয়/ড্র<input id="wr" type="number" step="0.1" style="width:100%" value="${TW().r}"></label></div><button class="pri" onclick="saveTP()">সেভ</button></div>`;
+  return tpBox+`<div class="box"><b>সিজন ${cur} (চলছে)</b><p class="mu">ফাইনাল শেষ হলে বিজয়ী ও রানার্স আপ "Previous Top Players" ট্যাবে দেখায়। "নতুন টুর্নামেন্ট" চাপলে নিজে থেকে সেভ হয়ে সিজন নম্বর বাড়বে।</p>${ok?`<button class="pri" onclick="saveSeason()">💾 এখনই Season ${cur} সেভ করুন</button>`:'<p class="mu">ফাইনাল এখনো শেষ হয়নি।</p>'}</div>`;
+}
+function saveTP(){
+  if(role!=='a1')return alert('এই কাজের অনুমতি নেই');
+  const g=id=>parseFloat(document.getElementById(id).value),v=[g('tpd'),g('tpq'),g('tps'),g('tpf')],w=[g('wa'),g('wd'),g('wr')];
+  if(v.some(n=>isNaN(n)||n<0||n>5)||w.some(n=>isNaN(n)||n<0||n>10)||w.every(n=>n===0))return alert('সঠিক সংখ্যা দিন');
+  db.doc('meta/cfg').set({tpDraw:v[0],tpQf:v[1],tpSf:v[2],tpFin:v[3],wAtk:w[0],wDef:w[1],wRes:w[2]},{merge:true}).then(()=>alert('সেভ হয়েছে'));
+}
+async function saveSeason(){
+  if(role!=='a1')return alert('এই কাজের অনুমতি নেই');
+  const rec=seasonRec();if(!rec)return alert('ফাইনাল এখনো শেষ হয়নি');
+  try{await db.doc('seasons/'+rec.season).set(rec);alert('Season '+rec.season+' সেভ হয়েছে।')}catch(e){alert('সেভ হয়নি: '+(e.code||e.message)+' (Firestore Rules-এ seasons যোগ করেছ কিনা দেখো)')}
+}
+function setOpen(n){if(!(can('days')))return alert('এই কাজের অনুমতি নেই');dayUser=false;db.doc('meta/state').update({open:n})}
+function setG(id,g){MG[id]=g;draw()}
+async function saveGroups(){if(!(can('draw')))return alert('এই কাজের অনুমতি নেই');
+  const A=P.filter(p=>MG[p.id]==='A').map(p=>p.id),B=P.filter(p=>MG[p.id]==='B').map(p=>p.id);
+  if(A.length+B.length<P.length)return alert('সবার গ্রুপ বেছে নিন');
+  if(A.length<2||B.length<2)return alert('প্রতি গ্রুপে কমপক্ষে ২ জন লাগবে');
+  if(S&&!confirm('গ্রুপ বদলালে ফিক্সচার নতুন হবে ও সব রেজাল্ট মুছে যাবে। নিশ্চিত?'))return;
+  await applyGroups(A,B);
+}
+function koOpts(sel){return '<option value="">— বেছে নিন —</option>'+P.map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.club)} (${S&&S.grp[p.id]||'-'})</option>`).join('')}
+function setKM(i,k,v){if(!KM.length)KM=K?K.q.map(x=>({...x})):[{},{},{},{}];KM[i][k]=v}
+async function saveKO(){if(!(can('ko')))return alert('এই কাজের অনুমতি নেই');
+  const q=KM.length?KM:(K?K.q:[]);
+  const ids=q.flatMap(x=>[x.a,x.b]);
+  if(q.length<4||ids.some(x=>!x))return alert('৪টা ম্যাচের সব টিম বেছে নিন');
+  if(new Set(ids).size<8)return alert('একই টিম দুইবার দেওয়া যাবে না');
+  if(!confirm('ব্র্যাকেট সেভ হবে।'+(K?' আগের নকআউট রেজাল্ট মুছে যাবে।':'')+' নিশ্চিত?'))return;
+  const b=db.batch(),ko=/^[QSF]/;
+  Object.keys(R).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('results/'+k)));
+  Object.keys(Q).filter(k=>ko.test(k)).forEach(k=>b.delete(db.doc('pending/'+k)));
+  b.set(db.doc('meta/ko'),{q:q.map(x=>({a:x.a,b:x.b})),win:{}});
+  await b.commit();KM=[];tab='ko';draw();
+}
+</script>
+</body></html>
